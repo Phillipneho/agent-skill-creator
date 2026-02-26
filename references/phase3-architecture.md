@@ -8,9 +8,9 @@
 
 ### Step 1: Define Agent Name
 
-Based on domain and objective, create descriptive name:
+Based on domain and objective, create a descriptive kebab-case name per the Agent Skills Open Standard.
 
-**Format**: `domain-objective-type`
+**Format**: `{domain}-{objective}` or `{action}-{object}`
 
 **Examples**:
 - US Agriculture → `nass-usda-agriculture`
@@ -19,10 +19,12 @@ Based on domain and objective, create descriptive name:
 - Brazil CONAB → `conab-crop-yield-analysis`
 
 **Rules**:
-- lowercase
-- hyphens to separate words
-- maximum 50 characters
-- descriptive but concise
+- 1-64 characters
+- Lowercase letters, numbers, and hyphens only
+- Must not start or end with a hyphen
+- Must not contain consecutive hyphens
+- Must match parent directory name
+- Descriptive but concise
 
 ### Step 2: Directory Structure
 
@@ -30,24 +32,22 @@ Based on domain and objective, create descriptive name:
 
 **Option A - Simple** (small agents):
 ```
-agent-name/
-├── .claude-plugin/
-│   └── marketplace.json    ← REQUIRED for installation!
-├── SKILL.md
+skill-name/
+├── SKILL.md               ← Primary file, spec-compliant frontmatter
 ├── scripts/
 │   └── main.py
 ├── references/
 │   └── guide.md
-└── assets/
-    └── config.json
+├── assets/
+│   └── config.json
+├── install.sh             ← Cross-platform installer
+└── README.md              ← Multi-platform install instructions
 ```
 
 **Option B - Organized** (medium agents):
 ```
-agent-name/
-├── .claude-plugin/
-│   └── marketplace.json    ← REQUIRED for installation!
-├── SKILL.md
+skill-name/
+├── SKILL.md               ← Primary file, spec-compliant frontmatter
 ├── scripts/
 │   ├── fetch.py
 │   ├── parse.py
@@ -58,16 +58,16 @@ agent-name/
 ├── references/
 │   ├── api-guide.md
 │   └── methodology.md
-└── assets/
-    └── config.json
+├── assets/
+│   └── config.json
+├── install.sh
+└── README.md
 ```
 
 **Option C - Complete** (complex agents):
 ```
-agent-name/
-├── .claude-plugin/
-│   └── marketplace.json    ← REQUIRED for installation!
-├── SKILL.md
+skill-name/
+├── SKILL.md               ← Primary file, spec-compliant frontmatter
 ├── scripts/
 │   ├── core/
 │   │   ├── fetch_[source].py
@@ -89,12 +89,16 @@ agent-name/
 ├── assets/
 │   ├── config.json
 │   └── metadata.json
+├── install.sh
+├── README.md
 └── data/
     ├── raw/
     ├── processed/
     ├── cache/
     └── analysis/
 ```
+
+**Note**: Simple skills do NOT need `.claude-plugin/marketplace.json`. For complex skill suites with multiple component skills, an optional `marketplace.json` with ONLY official fields may be added.
 
 **Choose based on**:
 - Number of scripts (1-2 → A, 3-5 → B, 6+ → C)

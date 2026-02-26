@@ -165,59 +165,59 @@ To avoid confusion:
 
 ## ✅ **Correct Terms**
 
-| Situation | Correct Term | Example (with -cskill convention) |
+| Situation | Correct Term | Example (standard kebab-case) |
 |----------|---------------|--------------------------------|
-| Single file with capability | **Simple Skill** | `pdf-generator-cskill/SKILL.md` |
-| Specialized sub-capability | **Component Skill** | `data-extraction-cskill/SKILL.md` |
-| Set of capabilities | **Skill Suite** | `financial-analysis-suite-cskill/` |
+| Single file with capability | **Simple Skill** | `pdf-generator/SKILL.md` |
+| Specialized sub-capability | **Component Skill** | `data-extraction/SKILL.md` |
+| Set of capabilities | **Skill Suite** | `financial-analysis-suite/` |
 | Organizational file | **Marketplace Plugin** | `marketplace.json` |
 | Complete system | **Skill Ecosystem** | Suite + Marketplace + Resources |
 
-## 🏷️ **Naming Convention: The "-cskill" Suffix**
+## 🏷️ **Naming Convention: Standard Kebab-Case (Agent Skills Open Standard)**
 
-### **Purpose of the "-cskill" Suffix**
-- **Clear Identification**: Immediately indicates it's a Claude Skill
-- **Defined Origin**: Created by Agent-Skill-Creator
-- **Consistent Standard**: Professional convention across all documentation
-- **Avoids Confusion**: Distinguishes from manual skills or other sources
-- **Easy Organization**: Simple identification and grouping
+### **Purpose of Standard Kebab-Case Naming**
+- **Clear Identification**: Descriptive names immediately convey the skill's purpose
+- **Open Standard**: Follows the v4.0 Agent Skills Open Standard for interoperability
+- **Consistent Standard**: Professional convention across all documentation and platforms
+- **Simplicity**: No unnecessary suffixes -- the name speaks for itself
+- **Easy Organization**: Simple identification and grouping by domain
 
 ### **Naming Rules**
 
 **1. Standard Format**
 ```
-{descriptive-description}-cskill/
+{descriptive-name}/
 ```
 
 **2. Simple Skills**
 ```
-pdf-text-extractor-cskill/
-csv-data-cleaner-cskill/
-weekly-report-generator-cskill/
-image-converter-cskill/
+pdf-text-extractor/
+csv-data-cleaner/
+weekly-report-generator/
+image-converter/
 ```
 
 **3. Complex Skill Suites**
 ```
-financial-analysis-suite-cskill/
-e-commerce-automation-cskill/
-research-workflow-cskill/
-business-intelligence-cskill/
+financial-analysis-suite/
+e-commerce-automation/
+research-workflow/
+business-intelligence/
 ```
 
 **4. Component Skills (within suites)**
 ```
-data-acquisition-cskill/
-technical-analysis-cskill/
-reporting-generator-cskill/
-user-interface-cskill/
+data-acquisition/
+technical-analysis/
+reporting-generator/
+user-interface/
 ```
 
 **5. Formatting**
 - ✅ Always lowercase
-- ✅ Use hyphens to separate words
+- ✅ Use hyphens to separate words (kebab-case)
 - ✅ Descriptive and clear
-- ✅ End with "-cskill"
+- ✅ No unnecessary suffixes
 - ❌ No underscores or spaces
 - ❌ No special characters (except hyphens)
 
@@ -225,11 +225,11 @@ user-interface-cskill/
 
 | User Requirement | Generated Name |
 |---------------------|-------------|
-| "Extract text from PDF documents" | `pdf-text-extractor-cskill/` |
-| "Clean CSV data automatically" | `csv-data-cleaner-cskill/` |
-| "Complete financial analysis platform" | `financial-analysis-suite-cskill/` |
-| "Generate weekly status reports" | `weekly-report-generator-cskill/` |
-| "Automate e-commerce workflows" | `e-commerce-automation-cskill/` |
+| "Extract text from PDF documents" | `pdf-text-extractor/` |
+| "Clean CSV data automatically" | `csv-data-cleaner/` |
+| "Complete financial analysis platform" | `financial-analysis-suite/` |
+| "Generate weekly status reports" | `weekly-report-generator/` |
+| "Automate e-commerce workflows" | `e-commerce-automation/` |
 
 ## 🎯 **Golden Rule**
 

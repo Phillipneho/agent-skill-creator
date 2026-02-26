@@ -189,8 +189,7 @@ ANALYSIS RESULT:
 ✅ Multiple domains of expertise
 
 DECISION: Complex Skill Suite
-GENERATED NAME: financial-analysis-suite-cskill
-```
+GENERATED NAME: financial-analysis-suite```
 
 #### **3.2 Component Structure Definition**
 ```python
@@ -467,10 +466,10 @@ if __name__ == "__main__":
 After approximately **45-90 minutes** of autonomous processing, the user will have:
 
 ```
-financial-analysis-suite-cskill/
+financial-analysis-suite/
 ├── .claude-plugin/
 │   └── marketplace.json          ← Suite manifest
-├── data-acquisition-cskill/
+├── data-acquisition/
 │   ├── SKILL.md                  ← Component skill 1
 │   ├── scripts/
 │   │   ├── fetch_data.py         ← Functional code
@@ -479,17 +478,17 @@ financial-analysis-suite-cskill/
 │   ├── references/
 │   │   └── api_documentation.md  ← Documentation
 │   └── assets/
-├── technical-analysis-cskill/
+├── technical-analysis/
 │   ├── SKILL.md                  ← Component skill 2
 │   ├── scripts/
 │   │   ├── indicators.py         ← Technical calculations
 │   │   ├── signals.py            ← Signal generation
 │   │   └── backtester.py         ← Historical tests
 │   └── references/
-├── visualization-cskill/
+├── visualization/
 │   ├── SKILL.md                  ← Component skill 3
 │   └── scripts/chart_generator.py
-├── reporting-cskill/
+├── reporting/
 │   ├── SKILL.md                  ← Component skill 4
 │   └── scripts/report_generator.py
 ├── shared/
@@ -502,7 +501,7 @@ financial-analysis-suite-cskill/
 └── test_installation.py          ← Automatic test
 ```
 
-**Note:** All components use the "-cskill" convention to identify that they were created by Agent-Skill-Creator.
+**Note:** All components use standard kebab-case naming per the Agent Skills Open Standard.
 
 ## 🚀 **How to Use the Created Skill**
 

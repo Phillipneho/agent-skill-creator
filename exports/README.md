@@ -63,9 +63,9 @@ skill-name-{variant}-v{version}_INSTALL.md
 ```
 
 **Examples:**
-- `financial-analysis-cskill-desktop-v1.0.0.zip`
-- `financial-analysis-cskill-api-v1.0.0.zip`
-- `financial-analysis-cskill-desktop-v1.0.0_INSTALL.md`
+- `financial-analysis-desktop-v1.0.0.zip`
+- `financial-analysis-api-v1.0.0.zip`
+- `financial-analysis-desktop-v1.0.0_INSTALL.md`
 
 ### Version Numbering
 

@@ -5,6 +5,100 @@ All notable changes to Agent Creator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [4.0.0] - February 2026
+
+### MAJOR: Cross-Platform Modernization & Agent Skills Open Standard Compliance
+
+**Full compliance with the Agent Skills Open Standard. Skills now work on 8+ platforms.**
+
+### Breaking Changes
+
+#### `-cskill` Suffix Removed
+- All generated skill names now use standard kebab-case (e.g., `stock-analyzer` not `stock-analyzer-cskill`)
+- `article-to-prototype-cskill/` renamed to `article-to-prototype/`
+- See `MIGRATION.md` for migration guide
+
+#### marketplace.json Simplified (Fixes Issue #5)
+- Stripped to ONLY official fields: `name`, `plugins[].name`, `plugins[].description`, `plugins[].source`, `plugins[].skills`
+- Removed non-standard fields: `owner`, `metadata`, `compatibility`, `templates`, `capabilities`, `activation`, `usage`, `test_queries`
+- Simple skills no longer need marketplace.json at all
+
+#### SKILL.md Restructured
+- Meta-skill SKILL.md: 4,116 lines reduced to 272 lines
+- Generated SKILL.md must be <500 lines with progressive disclosure via `references/`
+
+### Added
+
+#### Cross-Platform Support (8+ Platforms)
+- **Claude Code**: `~/.claude/skills/` or `.claude/skills/`
+- **GitHub Copilot**: `.github/skills/`
+- **Cursor**: `.cursor/rules/`
+- **Windsurf**: `.windsurf/skills/`
+- **Cline**: `.clinerules/`
+- **OpenAI Codex CLI**: `.codex/skills/`
+- **Gemini CLI**: `.gemini/skills/`
+
+#### Cross-Platform Install Script (`scripts/install-template.sh`)
+- Auto-detect platform from directory structure
+- `--platform` flag for explicit selection
+- `--project` flag for project-level install
+- `--dry-run` flag for preview
+- `--path` flag for custom location
+- SKILL.md validation before install
+
+#### Spec Validation (`scripts/validate.py`)
+- Validates frontmatter: name (1-64 chars, kebab-case), description (1-1024 chars)
+- Checks directory name matches `name` field
+- Warns on missing `license`, `metadata` fields
+- Warns on SKILL.md body exceeding 500 lines
+- Checks referenced files exist
+- JSON output with `--json` flag
+
+#### Security Scanning (`scripts/security_scan.py`)
+- Detects hardcoded API keys (OpenAI, AWS, GitHub, GitLab, Slack, generic)
+- Detects `.env`, `credentials.json`, `secrets.json` files
+- Detects dangerous Python patterns: `eval()`, `exec()`, `os.system()`, `shell=True`, `__import__()`
+- JSON output with `--json` flag
+
+#### SKILL.md Frontmatter Enhancements
+- `license` field (recommended)
+- `metadata.author` and `metadata.version` fields (recommended)
+- `compatibility` field (optional)
+
+#### Documentation
+- `MIGRATION.md`: v3.x to v4.0 migration guide
+- `references/pipeline-phases.md`: Consolidated Phase 1-5 instructions
+- `references/architecture-guide.md`: Simple vs Suite decision framework
+- `references/templates-guide.md`: Template-based creation docs
+- `references/interactive-mode.md`: Interactive wizard docs
+- `references/multi-agent-guide.md`: Suite creation docs
+- `references/agentdb-integration.md`: AgentDB learning system docs
+
+### Enhanced
+
+#### Export System
+- Validation and security scan run before export
+- Installation guide now covers all 8+ platforms
+- Removed -cskill from name handling
+
+#### Cross-Platform Guide
+- Expanded from 4 Anthropic platforms to 8+ platforms
+- Installation paths for each platform documented
+- Agent Skills Open Standard as the unifying reference
+
+#### Phase 5 Pipeline
+- SKILL.md created first (not marketplace.json)
+- Validation step added after file generation
+- Security scan step added after file generation
+- No mandatory marketplace.json for simple skills
+
+### Removed
+- `-cskill` suffix requirement from naming conventions
+- Non-standard marketplace.json fields
+- Mandatory marketplace.json for simple skills
+
+---
+
 ## [3.2.0] - October 2025
 
 ### 🎯 **MAJOR: Cross-Platform Export System**

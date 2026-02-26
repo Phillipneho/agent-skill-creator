@@ -1,6 +1,6 @@
 # Cross-Platform Export Guide
 
-**Version:** 3.2
+**Version:** 4.0
 **Purpose:** Complete guide to exporting agent-skill-creator skills for use across all Claude platforms
 
 ---
@@ -49,7 +49,7 @@ The export system creates **optimized .zip packages** with:
 After creating a skill, agent-skill-creator will prompt:
 
 ```
-✅ Skill created: financial-analysis-cskill/
+✅ Skill created: financial-analysis/
 
 📦 Export Options:
    1. Desktop/Web (.zip for manual upload)
@@ -60,9 +60,9 @@ After creating a skill, agent-skill-creator will prompt:
 Choice: 3
 
 🔨 Creating export packages...
-✅ Desktop package: exports/financial-analysis-cskill-desktop-v1.0.0.zip
-✅ API package: exports/financial-analysis-cskill-api-v1.0.0.zip
-📄 Installation guide: exports/financial-analysis-cskill-v1.0.0_INSTALL.md
+✅ Desktop package: exports/financial-analysis-desktop-v1.0.0.zip
+✅ API package: exports/financial-analysis-api-v1.0.0.zip
+📄 Installation guide: exports/financial-analysis-v1.0.0_INSTALL.md
 ```
 
 ### On-Demand Export
@@ -81,16 +81,16 @@ Using the export script directly:
 
 ```bash
 # Export both variants
-python scripts/export_utils.py ./my-skill-cskill
+python scripts/export_utils.py ./my-skill
 
 # Export only Desktop variant
-python scripts/export_utils.py ./my-skill-cskill --variant desktop
+python scripts/export_utils.py ./my-skill --variant desktop
 
 # Export with specific version
-python scripts/export_utils.py ./my-skill-cskill --version 2.0.1
+python scripts/export_utils.py ./my-skill --version 2.0.1
 
 # Export to custom directory
-python scripts/export_utils.py ./my-skill-cskill --output-dir ./dist
+python scripts/export_utils.py ./my-skill --output-dir ./dist
 ```
 
 ---
@@ -263,14 +263,14 @@ exports/
 ```
 
 **Components:**
-- `skill-name`: Directory name (e.g., `financial-analysis-cskill`)
+- `skill-name`: Directory name (e.g., `financial-analysis`)
 - `variant`: `desktop` or `api`
 - `version`: Semantic version (e.g., `v1.0.0`)
 
 **Examples:**
-- `stock-analyzer-cskill-desktop-v1.0.0.zip`
-- `stock-analyzer-cskill-api-v1.0.0.zip`
-- `stock-analyzer-cskill-v1.0.0_INSTALL.md`
+- `stock-analyzer-desktop-v1.0.0.zip`
+- `stock-analyzer-api-v1.0.0.zip`
+- `stock-analyzer-v1.0.0_INSTALL.md`
 
 ---
 
@@ -406,8 +406,7 @@ git clone repo-url
 **Fix:**
 ```bash
 # Check path exists
-ls -la ./my-skill-cskill
-
+ls -la ./my-skill
 # Use absolute path
 python scripts/export_utils.py /full/path/to/skill
 ```
@@ -483,9 +482,9 @@ python scripts/export_utils.py ./skill --output-dir ./dist
 Export multiple skills:
 
 ```bash
-# Loop through skills
-for skill in *-cskill; do
-    python scripts/export_utils.py "./$skill"
+# Loop through skill directories
+for skill in */; do
+    [ -f "$skill/SKILL.md" ] && python scripts/export_utils.py "./$skill"
 done
 
 # Or via agent-skill-creator

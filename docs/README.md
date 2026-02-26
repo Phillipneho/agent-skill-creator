@@ -81,7 +81,7 @@ Decision framework for agent creation:
 
 ### **[NAMING_CONVENTIONS.md](NAMING_CONVENTIONS.md)**
 Naming standards and conventions:
-- "-cskill" suffix explained
+- Standard kebab-case naming convention
 - Naming patterns for skills
 - Directory structure conventions
 - Best practices

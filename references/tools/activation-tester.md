@@ -477,15 +477,13 @@ class ActivationMonitor:
 ```bash
 # Run full test suite
 ./run-full-test-suite.sh \
-    /path/to/stock-analyzer-cskill \
+    /path/to/stock-analyzer \
     /output/test-results
 
 # Quick validation
-./quick-validation.sh /path/to/stock-analyzer-cskill
-
+./quick-validation.sh /path/to/stock-analyzer
 # Monitor performance
-./performance-benchmark.sh stock-analyzer-cskill
-```
+./performance-benchmark.sh stock-analyzer```
 
 ### **Example 2: Integration with Development Workflow**
 
@@ -503,7 +501,7 @@ jobs:
       - name: Run Activation Tests
         run: |
           ./references/tools/activation-tester/scripts/run-full-test-suite.sh \
-            ./references/examples/stock-analyzer-cskill \
+            ./references/examples/stock-analyzer \
             ./test-results
       - name: Upload Test Results
         uses: actions/upload-artifact@v2

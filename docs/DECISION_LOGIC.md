@@ -108,7 +108,7 @@ Complex Suite Path:
 # Decision confirmed: Create Simple Skill
 architecture = "simple"
 base_name = generate_descriptive_name(requirements)
-skill_name = f"{base_name}-cskill"  # Apply naming convention
+skill_name = base_name  # Standard kebab-case naming
 files_to_create = [
     "SKILL.md",
     "scripts/ (if needed)",
@@ -123,9 +123,9 @@ marketplace_json = False  # Single skill doesn't need manifest
 # Decision confirmed: Create Complex Skill Suite
 architecture = "complex_suite"
 base_name = generate_descriptive_name(requirements)
-suite_name = f"{base_name}-cskill"  # Apply naming convention
+suite_name = base_name  # Standard kebab-case naming
 components = identify_components(requirements)
-component_names = [f"{comp}-cskill" for comp in components]
+component_names = list(components)
 files_to_create = [
     ".claude-plugin/marketplace.json",
     f"{component}/SKILL.md" for component in component_names,
@@ -140,10 +140,10 @@ marketplace_json = True  # Suite needs organization manifest
 # Decision confirmed: Create Hybrid Architecture
 architecture = "hybrid"
 base_name = generate_descriptive_name(requirements)
-skill_name = f"{base_name}-cskill"  # Apply naming convention
+skill_name = base_name  # Standard kebab-case naming
 main_skill = "primary_skill.md"
 optional_components = identify_optional_components(requirements)
-component_names = [f"{comp}-cskill" for comp in optional_components]
+component_names = list(optional_components)
 files_to_create = [
     "SKILL.md",  # Main orchestrator
     "scripts/components/",  # Optional sub-components
@@ -170,16 +170,18 @@ def generate_descriptive_name(user_requirements):
     base_name = sanitize_filename(base_name)
     return base_name
 
-def apply_cskill_convention(base_name):
-    """Apply -cskill naming convention"""
-    if not base_name.endswith("-cskill"):
-        return f"{base_name}-cskill"
+def apply_naming_convention(base_name):
+    """Apply standard kebab-case naming convention"""
+    # Ensure valid kebab-case format
+    base_name = base_name.lower().strip()
+    base_name = re.sub(r'[^a-z0-9-]', '-', base_name)
+    base_name = re.sub(r'-+', '-', base_name).strip('-')
     return base_name
 
 # Examples of naming logic:
-# "extract text from PDF" → "pdf-text-extractor-cskill"
-# "financial analysis with reporting" → "financial-analysis-suite-cskill"
-# "clean CSV data" → "csv-data-cleaner-cskill"
+# "extract text from PDF" → "pdf-text-extractor"
+# "financial analysis with reporting" → "financial-analysis-suite"
+# "clean CSV data" → "csv-data-cleaner"
 ```
 
 ## 🎯 **Decision Documentation**

@@ -1049,13 +1049,12 @@ description: |
 
 ## 🎯 Complete Example: Robust Detection Implementation
 
-### Example Skill: stock-analyzer-cskill
-
+### Example Skill: stock-analyzer
 **marketplace.json:**
 
 ```json
 {
-  "name": "stock-analyzer-cskill",
+  "name": "stock-analyzer",
   "description": "Technical stock analysis using indicators",
 
   "activation": {

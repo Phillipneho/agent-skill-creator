@@ -1,0 +1,11 @@
+{
+  "name": "article-to-prototype",
+  "plugins": [
+    {
+      "name": "article-to-prototype-plugin",
+      "description": "Autonomously extracts technical content from articles (PDF, web, markdown, notebooks) and generates functional prototypes and proof-of-concept implementations in the appropriate programming language. Activates with phrases like extract from article, implement from paper, create prototype from, article to code, paper to prototype, parse pdf and implement, build from documentation.",
+      "source": "./",
+      "skills": ["./"]
+    }
+  ]
+}

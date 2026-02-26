@@ -1,7 +1,7 @@
 {
   "_comment": "Robust Activation Template - Replace all {{placeholders}} with actual values",
 
-  "name": "{{skill-name-cskill}}",
+  "name": "{{skill-name}}",
   "owner": {
     "name": "Agent Creator",
     "email": "noreply@example.com"

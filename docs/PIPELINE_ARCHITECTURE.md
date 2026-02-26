@@ -18,13 +18,13 @@ Uma skill Claude é **conhecimento especializado** que foi:
 ```
 Fonte de Conhecimento                    Skill Claude                      Capacidade
 ├─────────────────────────┬───────────────────────────────┬───────────────────────────────┬─────────────────┐
-│ Artigo sobre análise  │ → │ financial-analysis-cskill │ → │ Analisa dados     │
+│ Artigo sobre análise  │ → │ financial-analysis │ → │ Analisa dados     │
 │   financeira           │   │ (expertise capturada)    │   │ de mercado     │
 │                       │ │                           │   │   automatica     │
-│ Manual de procedimento│ → │ business-process-cskill │ → │ Executa         │
+│ Manual de procedimento│ → │ business-process │ → │ Executa         │
 │   empresarial          │   │ (expertise capturada)    │   │ workflows      │
 │                       │ │                           │   │   padronizados   │
-│ Tutorial técnico       │ → │ tutorial-system-cskill   │ → │ Guia usuários   │
+│ Tutorial técnico       │ → │ tutorial-system   │ → │ Guia usuários   │
 │   passo a passo         │   │ (expertise capturada)    │   │   interativos     │
 └─────────────────────────┴───────────────────────────────┴─────────────────────────────┴─────────────────┘
 ```
@@ -82,13 +82,13 @@ Entrada Bruta → [Etapa 1] → [Etapa 2] → [Etapa 3] → Saída Final
 
 #### **Data Processing Pipeline**
 ```
-data-processing-pipeline-cskill/
-├── data-ingestion-cskill/        ← Coleta de dados brutos
+data-processing-pipeline/
+├── data-ingestion/        ← Coleta de dados brutos
 │   └── output: dados_crudos.json
-├── data-transformation-cskill/   ← Limpeza e estruturação
+├── data-transformation/   ← Limpeza e estruturação
 │   ├── input: dados_crudos.json
 │   └── output: dados_limpos.json
-└── data-analysis-cskill/        ← Análise e insights
+└── data-analysis/        ← Análise e insights
     ├── input: dados_limpos.json
     └── output: insights.json
 ```
@@ -99,22 +99,22 @@ data-processing-pipeline-cskill/
 
 #### **Research Pipeline Acadêmica**
 ```
-research-workflow-cskill/
-├── problem-definition-cskill/      ← Definição do problema
+research-workflow/
+├── problem-definition/      ← Definição do problema
 │   └── output: research_scope.json
-├── literature-search-cskill/        ← Busca de literatura
+├── literature-search/        ← Busca de literatura
 │   ├── input: research_scope.json
 │   └── output: articles_found.json
-├── data-collection-cskill/          ← Coleta de dados
+├── data-collection/          ← Coleta de dados
 │   ├── input: articles_found.json
 │   └── output: experimental_data.json
-├── analysis-engine-cskill/           ← Análise estatística
+├── analysis-engine/           ← Análise estatística
 │   ├── input: experimental_data.json
 │   └── output: statistical_results.json
-├── visualization-cskill/           ← Visualização dos resultados
+├── visualization/           ← Visualização dos resultados
 │   ├── input: statistical_results.json
 │   └── output: charts.json
-└── report-generation-cskill/        ← Geração de relatório
+└── report-generation/        ← Geração de relatório
     ├── input: charts.json
     └── output: research_report.pdf
 ```
@@ -123,19 +123,19 @@ research-workflow-cskill/
 
 #### **Business Intelligence Pipeline**
 ```
-business-intelligence-cskill/
-├── data-sources-cskill/           ← Conexão com fontes
+business-intelligence/
+├── data-sources/           ← Conexão com fontes
 │   └── output: raw_data.json
-├── etl-process-cskill/            ← Transformação ETL
+├── etl-process/            ← Transformação ETL
 │   ├── input: raw_data.json
 │   └── output: processed_data.json
-├── analytics-engine-cskill/          ← Análise de negócios
+├── analytics-engine/          ← Análise de negócios
 │   ├── input: processed_data.json
 │   └── output: kpi_metrics.json
-├── dashboard-cskill/               ← Criação de dashboards
+├── dashboard/               ← Criação de dashboards
 │   ├── input: kpi_metrics.json
 │   └── output: dashboard.json
-└── alert-system-cskill/           Sistema de alertas
+└── alert-system/           Sistema de alertas
     ├── input: kpi_metrics.json
     └── output: alerts.json
 ```
@@ -287,16 +287,16 @@ def decide_architecture_with_pipeline(article_content, pipeline_detection):
         }
 ```
 
-### **Fase 4: Geração de Pipeline com "-cskill"**
+### **Fase 4: Geração de Pipeline com Kebab-Case Naming**
 ```python
 def create_pipeline_skill(analysis_result):
     """
-    Cria uma pipeline skill com convenção -cskill
+    Cria uma pipeline skill com convenção standard kebab-case
     """
 
     # Nome base para pipeline
     base_name = generate_pipeline_name(analysis_result['stages'])
-    skill_name = f"{base_name}-pipeline-cskill"
+    skill_name = f"{base_name}-pipeline"
 
     # Estrutura para pipeline
     directory_structure = create_pipeline_directory_structure(skill_name, analysis_result['stages'])
@@ -316,16 +316,16 @@ def create_pipeline_skill(analysis_result):
 
 ### **1. E-commerce Analytics Pipeline**
 ```
-ecommerce-analytics-pipeline-cskill/
-├── sales-data-ingestion-cskill/
+ecommerce-analytics-pipeline/
+├── sales-data-ingestion/
 │   └── Coleta dados de vendas de múltiplas fontes
-├── data-enrichment-cskill/
+├── data-enrichment/
 │   └── Enriquece com dados de clientes
-├── customer-analytics-cskill/
+├── customer-analytics/
 │   └── Análise de comportamento
-├── reporting-dashboard-cskill/
+├── reporting-dashboard/
 │   └── Dashboard em tempo real
-└── alert-engine-cskill/
+└── alert-engine/
     └── Alertas de métricas importantes
 
 Fluxo: `Vendas → Enriquecimento → Análise → Dashboard → Alertas`
@@ -333,16 +333,16 @@ Fluxo: `Vendas → Enriquecimento → Análise → Dashboard → Alertas`
 
 ### **2. Content Creation Pipeline**
 ```
-content-creation-pipeline-cskill/
-├── content-research-cskill/
+content-creation-pipeline/
+├── content-research/
 │   └── Pesquisa de tendências e tópicos
-├── content-generation-cskill/
+├── content-generation/
 │   └── Geração de conteúdo baseado em IA
-├── content-optimization-cskill/
+├── content-optimization/
 │   └── SEO e otimização
-├── publishing-platform-cskill/
+├── publishing-platform/
 │   └── Publicação em múltiplos canais
-└── analytics-tracking-cskill/
+└── analytics-tracking/
     └── Monitoramento de performance
 
 Fluxo: `Pesquisa → Geração → Otimização → Publicação → Análise`
@@ -350,16 +350,16 @@ Fluxo: `Pesquisa → Geração → Otimização → Publicação → Análise`
 
 ### **3. Risk Management Pipeline**
 ```
-risk-management-cskill/
-├── risk-identification-cskill/
+risk-management/
+├── risk-identification/
 │   └── Identificação de riscos potenciais
-├── data-collection-cskill/
+├── data-collection/
 │   └── Coleta de dados de risco
-├── risk-assessment-cskill/
+├── risk-assessment/
 │   └── Análise e classificação
-├── mitigation-strategies-cskill/
+├── mitigation-strategies/
 │   └── Estratégias de mitigação
-└── monitoring-dashboard-cskill/
+└── monitoring-dashboard/
     └── Dashboard de risco em tempo real
 
 Fluxo: `Identificação → Coleta → Avaliação → Mitigação → Monitoramento`
@@ -367,18 +367,18 @@ Fluxo: `Identificação → Coleta → Avaliação → Mitigação → Monitoram
 
 ### **4. HR Automation Pipeline**
 ```
-hr-automation-cskill/
-├── candidate-sourcing-cskill/
+hr-automation/
+├── candidate-sourcing/
 │   └── Fontes de candidatos
-├── resume-screening-cskill/
+├── resume-screening/
 │   └── Triagem inicial de currículos
-├── interview-scheduling-cskill/
+├── interview-scheduling/
 │   └️ Agendamento de entrevistas
-├── interview-evaluation-cskill/
+├── interview-evaluation/
 │   └️ Avaliação de candidatos
-├── offer-management-cskill/
+├── offer-management/
 │   └️ Gestão de ofertas
-└── onboarding-automation-cskill/
+└── onboarding-automation/
     └️ Processo de integração
 
 Fluxo: `Fontes → Triagem → Entrevistas → Avaliação → Contratação → Onboarding`
@@ -442,22 +442,22 @@ Fluxo: `Fontes → Triagem → Entrevistas → Avaliação → Contratação →
 ### **Abordagens Híbridas:**
 ```python
 # Pipeline com componentes opcionais
-data-pipeline-with-options-cskill/
-├── core-pipeline-cskill/           ← Pipeline principal
-│   ├── data-ingestion-cskill/
-│   └── data-transformation-cskill/
-│   └── data-analysis-cskill/
-├── optional-ml-cskill/          ← Componente opcional
+data-pipeline-with-options/
+├── core-pipeline/           ← Pipeline principal
+│   ├── data-ingestion/
+│   └── data-transformation/
+│   └── data-analysis/
+├── optional-ml/          ← Componente opcional
 │   └── Machine learning avançado
-├── optional-reporting-cskill/      ← Componente opcional
+├── optional-reporting/      ← Componente opcional
 │   └── Relatórios executivos
 
 # Múltiplas pipelines interconectadas
-orchestrated-pipeline-cskill/
-├── data-pipeline-cskill/
-├── analytics-pipeline-cskill/
-├── reporting-pipeline-cskill/
-└── alerting-pipeline-cskill/
+orchestrated-pipeline/
+├── data-pipeline/
+├── analytics-pipeline/
+├── reporting-pipeline/
+└── alerting-pipeline/
 ```
 
 ## 🎯 **Casos de Uso Ideais para Pipeline Skills**
@@ -510,4 +510,4 @@ orchestrated-pipeline-cskill/
 
 **Skills Claude são a materialização de expertise reutilizível** capturada de fontes especializadas. Quando essa expertise assume a forma de fluxos sequenciais (pipelines), elas representam transformações **end-to-end** que entregam valor completo, desde dados brutos até insights acionáveis.
 
-**A convenção "-cskill" assegura que essa expertise capturada seja organizada, profissional e facilmente identificável, permitindo que usuários e organizações beneficiem da automação de processos complexos de ponta a ponta, transformando conhecimento especializado em capacidade prática escalável.**
+**The standard kebab-case naming convention ensures that captured expertise is organized, professional, and easily identifiable, enabling users and organizations to benefit from end-to-end automation of complex processes, transforming specialized knowledge into scalable practical capability.**

@@ -1,469 +1,273 @@
 # Cross-Platform Compatibility Guide
 
-**Version:** 3.2
-**Purpose:** Complete compatibility matrix for Claude Skills across all platforms
+**Version:** 4.0
+**Purpose:** Complete compatibility matrix for Agent Skills across all platforms supporting the Agent Skills Open Standard
 
 ---
 
-## 🎯 Overview
+## Overview
 
-This guide explains how skills created by agent-skill-creator work across **four Claude platforms**, their differences, and how to optimize for each.
+Skills created by agent-skill-creator are compliant with the **Agent Skills Open Standard** and work across all platforms that support the SKILL.md format. As of v4.0, this includes 8+ major platforms.
 
-### The Four Platforms
+### Supported Platforms
 
-1. **Claude Code** (CLI) - Command-line tool for developers
-2. **Claude Desktop** (Native App) - Desktop application
-3. **claude.ai** (Web) - Browser-based interface
-4. **Claude API** - Programmatic integration
+| Platform | Type | SKILL.md Location |
+|----------|------|-------------------|
+| **Claude Code** | CLI | `~/.claude/skills/` or `.claude/skills/` |
+| **GitHub Copilot CLI** | CLI | `.github/skills/` |
+| **VS Code Copilot** | IDE Extension | `.github/skills/` |
+| **Cursor** | IDE | `.cursor/rules/` |
+| **Windsurf** | IDE | `.windsurf/skills/` |
+| **Cline** | VS Code Extension | `.clinerules/` |
+| **OpenAI Codex CLI** | CLI | `.codex/skills/` |
+| **Gemini CLI** | CLI | `.gemini/skills/` |
+| **Claude Desktop** | Desktop App | .zip upload |
+| **claude.ai** | Web | .zip upload |
+| **Claude API** | API | Programmatic upload |
+
+### The Unifying Standard
+
+All these platforms read the same SKILL.md format:
+
+```yaml
+---
+name: skill-name
+description: What the skill does and when to activate it
+license: MIT
+metadata:
+  author: Author Name
+  version: 1.0.0
+---
+# Skill content here...
+```
+
+A skill created once works everywhere without modification.
 
 ---
 
-## 📊 Compatibility Matrix
+## Installation by Platform
 
-### Core Functionality
+### Claude Code
 
-| Feature | Claude Code | Claude Desktop | claude.ai | Claude API |
-|---------|-------------|----------------|-----------|------------|
-| **SKILL.md support** | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| **Python scripts** | ✅ Full | ✅ Full | ✅ Full | ⚠️ Limited* |
-| **References/docs** | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| **Assets/templates** | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| **requirements.txt** | ✅ Full | ✅ Full | ✅ Full | ⚠️ Limited* |
-
-\* API has execution constraints (no network, no pip install at runtime)
-
-### Installation & Distribution
-
-| Feature | Claude Code | Claude Desktop | claude.ai | Claude API |
-|---------|-------------|----------------|-----------|------------|
-| **Installation method** | Plugin/directory | Manual .zip | Manual .zip | API upload |
-| **Marketplace support** | ✅ Yes | ❌ No | ❌ No | ❌ No |
-| **marketplace.json** | ✅ Used | ❌ Ignored | ❌ Ignored | ❌ Not used |
-| **Auto-updates** | ✅ Via git/plugins | ❌ Manual | ❌ Manual | ✅ Via API |
-| **Version control** | ✅ Native git | ⚠️ Manual | ⚠️ Manual | ✅ Programmatic |
-| **Team sharing** | ✅ Via plugins | ❌ Individual | ❌ Individual | ✅ Via API |
-
-### Technical Specifications
-
-| Specification | Claude Code | Claude Desktop | claude.ai | Claude API |
-|---------------|-------------|----------------|-----------|------------|
-| **Max skill size** | No limit | ~10MB recommended | ~10MB recommended | 8MB hard limit |
-| **Skills per user** | Unlimited | Platform limit | Platform limit | 8 per request |
-| **Execution environment** | Full | Full | Full | Sandboxed |
-| **Network access** | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No |
-| **Package install** | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No |
-| **File system access** | ✅ Yes | ✅ Yes | ✅ Yes | ⚠️ Limited |
-
----
-
-## 🔍 Platform Details
-
-### Claude Code (CLI)
-
-**Best for:** Developers, power users, teams with git workflows
-
-**Strengths:**
-- ✅ Native skill support (no export needed)
-- ✅ Plugin marketplace distribution
-- ✅ Git-based version control
-- ✅ Automatic updates
-- ✅ Full execution environment
-- ✅ No size limits
-- ✅ Team collaboration via plugins
-
-**Installation:**
 ```bash
-# Method 1: Plugin marketplace
-/plugin marketplace add ./skill-name-cskill
+# Using install.sh (recommended)
+./install.sh
 
-# Method 2: Personal skills
-~/.claude/skills/skill-name-cskill/
+# Manual: User-level
+cp -r skill-name/ ~/.claude/skills/skill-name/
 
-# Method 3: Project skills
-.claude/skills/skill-name-cskill/
+# Manual: Project-level
+cp -r skill-name/ .claude/skills/skill-name/
 ```
 
-**Workflow:**
-1. Create skill with agent-skill-creator
-2. Install via plugin command
-3. Use immediately
-4. Update via git pull
+**Best for:** Developers, power users, teams with git workflows.
 
-**Optimal for:**
-- Development workflows
-- Team projects
-- Version-controlled skills
-- Complex skill suites
-- Rapid iteration
+### GitHub Copilot
 
----
+```bash
+# Using install.sh
+./install.sh --platform copilot
 
-### Claude Desktop (Native App)
-
-**Best for:** Individual users, desktop workflows, offline use
-
-**Strengths:**
-- ✅ Native app performance
-- ✅ Offline capability
-- ✅ Full skill functionality
-- ✅ System integration
-- ✅ Privacy (local execution)
-
-**Limitations:**
-- ❌ No marketplace
-- ❌ Manual .zip upload required
-- ❌ Individual installation (no team sharing)
-- ❌ Manual updates
-
-**Installation:**
-```
-1. Locate exported .zip package
-2. Open Claude Desktop
-3. Go to: Settings → Capabilities → Skills
-4. Click: Upload skill
-5. Select the .zip file
-6. Wait for confirmation
+# Manual: Project-level
+cp -r skill-name/ .github/skills/skill-name/
 ```
 
-**Workflow:**
-1. Export: Create Desktop package
-2. Upload: Manual .zip upload
-3. Update: Re-upload new version
-4. Share: Send .zip to colleagues
+**Best for:** GitHub-integrated workflows, VS Code users.
 
-**Optimal for:**
-- Personal productivity
-- Privacy-sensitive work
-- Offline usage
-- Desktop-integrated workflows
+### Cursor
 
----
+```bash
+# Using install.sh
+./install.sh --platform cursor
 
-### claude.ai (Web Interface)
-
-**Best for:** Quick access, browser-based work, cross-device
-
-**Strengths:**
-- ✅ No installation required
-- ✅ Access from any browser
-- ✅ Cross-device availability
-- ✅ Always up-to-date interface
-- ✅ Full skill functionality
-
-**Limitations:**
-- ❌ No marketplace
-- ❌ Manual .zip upload required
-- ❌ Individual installation
-- ❌ Manual updates
-- ❌ Requires internet connection
-
-**Installation:**
-```
-1. Visit https://claude.ai
-2. Log in to account
-3. Click profile → Settings
-4. Navigate to: Skills
-5. Click: Upload skill
-6. Select the .zip file
-7. Confirm upload
+# Manual
+cp -r skill-name/ .cursor/rules/skill-name/
 ```
 
-**Workflow:**
-1. Export: Create Desktop package (same as Desktop)
-2. Upload: Via web interface
-3. Update: Re-upload new version
-4. Share: Send .zip to colleagues
+**Best for:** Cursor IDE users. Cursor reads SKILL.md natively alongside its `.mdc` rules.
 
-**Optimal for:**
-- Browser-based workflows
-- Quick skill access
-- Multi-device usage
-- Casual/infrequent use
+### Windsurf
 
----
+```bash
+# Using install.sh
+./install.sh --platform windsurf
 
-### Claude API (Programmatic)
+# Manual
+cp -r skill-name/ .windsurf/skills/skill-name/
+```
 
-**Best for:** Production apps, automation, enterprise integration
+**Best for:** Windsurf IDE users.
 
-**Strengths:**
-- ✅ Programmatic control
-- ✅ Version management via API
-- ✅ Automated deployment
-- ✅ CI/CD integration
-- ✅ Workspace-level sharing
-- ✅ Production scalability
+### Cline
 
-**Limitations:**
-- ⚠️ 8MB size limit (hard)
-- ⚠️ No network access in execution
-- ⚠️ No pip install at runtime
-- ⚠️ Sandboxed environment
-- ⚠️ Max 8 skills per request
+```bash
+# Using install.sh
+./install.sh --platform cline
 
-**Installation:**
+# Manual
+cp -r skill-name/ .clinerules/skill-name/
+```
+
+**Best for:** Cline extension users in VS Code.
+
+### OpenAI Codex CLI
+
+```bash
+# Using install.sh
+./install.sh --platform codex
+
+# Manual
+cp -r skill-name/ .codex/skills/skill-name/
+```
+
+**Best for:** Codex CLI users.
+
+### Gemini CLI
+
+```bash
+# Using install.sh
+./install.sh --platform gemini
+
+# Manual
+cp -r skill-name/ .gemini/skills/skill-name/
+```
+
+**Best for:** Gemini CLI users.
+
+### Claude Desktop / claude.ai (Web)
+
+These platforms use .zip upload instead of directory copying:
+
+1. Export: `python scripts/export_utils.py ./skill-name --variant desktop`
+2. Open Claude Desktop or claude.ai
+3. Go to Settings > Skills > Upload skill
+4. Select the .zip file
+
+### Claude API
+
 ```python
 import anthropic
 
-client = anthropic.Anthropic(api_key="your-key")
+client = anthropic.Anthropic()
 
-# Upload skill
-with open('skill-api-v1.0.0.zip', 'rb') as f:
-    skill = client.skills.create(
-        file=f,
-        name="skill-name"
-    )
+with open('skill-name-api-v1.0.0.zip', 'rb') as f:
+    skill = client.skills.create(file=f, name="skill-name")
 
-# Use in requests
 response = client.messages.create(
     model="claude-sonnet-4",
-    messages=[{"role": "user", "content": query}],
+    messages=[{"role": "user", "content": "Your query here"}],
     container={"type": "custom_skill", "skill_id": skill.id},
     betas=["code-execution-2025-08-25", "skills-2025-10-02"]
 )
 ```
 
-**Workflow:**
-1. Export: Create API package (optimized)
-2. Upload: Programmatic via API
-3. Deploy: Integrate in production
-4. Update: Upload new version
-5. Manage: Version control via API
+---
 
-**Optimal for:**
-- Production applications
-- Automated workflows
-- Enterprise integration
-- Scalable deployments
-- CI/CD pipelines
+## Compatibility Matrix
+
+### Core Functionality
+
+| Feature | CLI Platforms | Desktop/Web | Claude API |
+|---------|-------------|-------------|------------|
+| **SKILL.md support** | Full | Full | Full |
+| **Python scripts** | Full | Full | Sandboxed* |
+| **References/docs** | Full | Full | Full |
+| **Assets/templates** | Full | Full | Full |
+| **install.sh** | Full | N/A | N/A |
+
+\* API: No network access, no pip install at runtime
+
+### Technical Specifications
+
+| Specification | CLI Platforms | Desktop/Web | Claude API |
+|---------------|-------------|-------------|------------|
+| **Max skill size** | No limit | ~10MB | 8MB hard limit |
+| **Network access** | Yes | Yes | No |
+| **Package install** | Yes | Yes | No |
+| **File system** | Full | Full | Limited |
+| **Updates** | git pull | Re-upload | API upload |
 
 ---
 
-## 🔄 Migration Between Platforms
+## Platform-Specific Notes
 
-### Code → Desktop/Web
+### marketplace.json
 
-**Scenario:** Developed in Claude Code, share with Desktop users
+- **Required by**: Claude Code (for plugin marketplace distribution only)
+- **Not needed by**: All other platforms
+- **Recommendation**: For simple skills, do not include `marketplace.json`. Only add it for complex skill suites that need Claude Code plugin distribution.
+- **Format**: If included, use ONLY official fields: `name`, `plugins[].name`, `plugins[].description`, `plugins[].source`, `plugins[].skills`
 
-**Process:**
+### Skill Activation
+
+All platforms that support the SKILL.md standard use the `description` field in frontmatter as the primary activation mechanism. The description should contain:
+
+- Clear explanation of when to use the skill
+- Domain-specific keywords
+- Example trigger phrases
+
+No platform-specific activation configuration is needed.
+
+### File Structure
+
+The standard skill directory works on all platforms:
+
+```
+skill-name/
+├── SKILL.md          # Required - primary skill definition
+├── scripts/          # Optional - executable code
+├── references/       # Optional - detailed documentation
+├── assets/           # Optional - templates, schemas, data
+├── install.sh        # Optional - cross-platform installer
+└── README.md         # Recommended - install instructions
+```
+
+---
+
+## Migration Between Platforms
+
+### CLI Platform to CLI Platform
+
+Skills are directly portable. Just copy the directory to the target platform's skill location:
+
 ```bash
-# 1. Export Desktop package
-"Export my-skill for Desktop"
+# From Claude Code to Copilot
+cp -r ~/.claude/skills/my-skill/ .github/skills/my-skill/
 
-# 2. Share .zip file
+# From Cursor to Cline
+cp -r .cursor/rules/my-skill/ .clinerules/my-skill/
+```
+
+### CLI Platform to Desktop/Web
+
+Export as .zip:
+
+```bash
+python scripts/export_utils.py ./my-skill --variant desktop
 # Output: exports/my-skill-desktop-v1.0.0.zip
-
-# 3. Desktop users upload
-# Settings → Skills → Upload skill
 ```
 
-**Considerations:**
-- ✅ Full functionality preserved
-- ✅ All scripts/docs included
-- ⚠️ No auto-updates (manual)
-- ⚠️ Each user uploads separately
+### CLI Platform to API
 
-### Code → API
+Export as optimized .zip:
 
-**Scenario:** Deploy production skill via API
-
-**Process:**
 ```bash
-# 1. Export API package (optimized)
-"Export my-skill for API"
-
-# 2. Upload programmatically
-python deploy_skill.py
-
-# 3. Integrate in production
-# Use skill_id in API requests
-```
-
-**Considerations:**
-- ⚠️ Size limit: < 8MB
-- ⚠️ No network access
-- ⚠️ No runtime pip install
-- ✅ Automated deployment
-- ✅ Version management
-
-### Desktop/Web → Code
-
-**Scenario:** Import skill to Claude Code
-
-**Process:**
-```bash
-# 1. Unzip package
-unzip skill-name-desktop-v1.0.0.zip -d skill-name-cskill/
-
-# 2. Install in Claude Code
-/plugin marketplace add ./skill-name-cskill
-
-# 3. Optional: Add to git
-git add skill-name-cskill/
-git commit -m "Import skill from Desktop"
-```
-
-**Considerations:**
-- ✅ Full functionality
-- ✅ Can add version control
-- ✅ Can share via plugins
-- ⚠️ marketplace.json may be missing (create if needed)
-
----
-
-## 🎯 Optimization Strategies
-
-### For Desktop/Web
-
-**Goal:** Complete, user-friendly package
-
-**Strategy:**
-- ✅ Include all documentation
-- ✅ Include examples and references
-- ✅ Keep README comprehensive
-- ✅ Add usage instructions
-- ✅ Include all assets
-
-**Package characteristics:**
-- Size: 2-5 MB typical
-- Focus: User experience
-- Documentation: Complete
-
-### For API
-
-**Goal:** Small, execution-focused package
-
-**Strategy:**
-- ⚠️ Minimize size (< 8MB)
-- ⚠️ Remove heavy docs
-- ⚠️ Remove examples
-- ✅ Keep essential scripts
-- ✅ Keep SKILL.md lean
-
-**Package characteristics:**
-- Size: 0.5-2 MB typical
-- Focus: Execution efficiency
-- Documentation: Minimal
-
----
-
-## 🛠️ Platform-Specific Issues
-
-### Claude Code Issues
-
-**Issue:** Plugin not loading
-- Check marketplace.json syntax
-- Verify plugin path correct
-- Run `/plugin list` to debug
-
-**Issue:** Skill not activating
-- Check SKILL.md frontmatter
-- Verify activation patterns
-- Test with explicit queries
-
-### Desktop/Web Issues
-
-**Issue:** Upload fails
-- Check file size < 10MB
-- Verify .zip format correct
-- Try re-exporting package
-
-**Issue:** Skill doesn't activate
-- Check name ≤ 64 chars
-- Check description ≤ 1024 chars
-- Verify frontmatter valid
-
-### API Issues
-
-**Issue:** Size limit exceeded
-- Export API variant (optimized)
-- Remove large files
-- Compress assets
-
-**Issue:** Skill execution fails
-- No network calls allowed
-- No pip install at runtime
-- Check sandboxing constraints
-
-**Issue:** Beta headers missing
-```python
-# REQUIRED headers
-betas=[
-    "code-execution-2025-08-25",
-    "skills-2025-10-02"
-]
+python scripts/export_utils.py ./my-skill --variant api
+# Output: exports/my-skill-api-v1.0.0.zip (< 8MB)
 ```
 
 ---
 
-## 📋 Feature Comparison
+## Best Practices
 
-### What Works Everywhere
-
-✅ **Universal Features:**
-- SKILL.md core functionality
-- Basic Python scripts (with constraints)
-- Text-based references
-- Asset files (templates, prompts)
-- Markdown documentation
-
-### Platform-Specific Features
-
-**Claude Code Only:**
-- marketplace.json distribution
-- Plugin marketplace
-- Git-based updates
-- .claude-plugin/ directory
-
-**API Only:**
-- Programmatic upload
-- Workspace-level sharing
-- Version control via API
-- Automated deployment
-
-**Desktop/Web Only:**
-- Native app integration (Desktop)
-- Browser access (Web)
-- Offline capability (Desktop)
+1. **Develop once, deploy everywhere**: Create and test in your preferred CLI tool, then install on other platforms.
+2. **Use install.sh**: Include the cross-platform installer for easy deployment.
+3. **Keep SKILL.md lean**: Under 500 lines, detailed content in `references/`.
+4. **Test activation**: Verify the `description` triggers correctly on your target platform.
+5. **Include README.md**: Document installation instructions for all platforms.
+6. **No platform hacks**: Avoid platform-specific code or configuration. The standard format works everywhere.
 
 ---
 
-## 🎓 Best Practices
-
-### Development Workflow
-
-**Recommended:** Develop in Claude Code, export for others
-
-```
-Claude Code (Development)
-    ↓
-Create & Test Locally
-    ↓
-Export Desktop Package → Share with Desktop users
-Export API Package → Deploy to production
-```
-
-### Distribution Strategy
-
-**For Teams:**
-- **Developers**: Claude Code via plugins
-- **Others**: Desktop/Web via .zip
-- **Production**: API via programmatic deployment
-
-**For Open Source:**
-- **Primary**: Claude Code marketplace
-- **Releases**: Export packages for Desktop/Web
-- **Documentation**: Installation guides for all platforms
-
----
-
-## 📚 Related Documentation
-
-- **Export Guide**: `export-guide.md` - How to export skills
-- **Main README**: `../README.md` - Agent-skill-creator overview
-- **API Documentation**: Claude API docs (official)
-
----
-
-**Generated by:** agent-skill-creator v3.2
-**Last updated:** October 2025
+**Generated by:** agent-skill-creator v4.0
+**Standard:** Agent Skills Open Standard (agentskills.io/specification)

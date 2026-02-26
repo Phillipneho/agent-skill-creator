@@ -692,9 +692,8 @@ Commands:
     help                                        Show this help message
 
 Examples:
-    $0 full-test-suite ./references/examples/stock-analyzer-cskill ./test-results
-    $0 quick-validation ./references/examples/stock-analyzer-cskill
-
+    $0 full-test-suite ./references/examples/stock-analyzer ./test-results
+    $0 quick-validation ./references/examples/stock-analyzer
 Environment Variables:
     RESULTS_DIR    Directory for test results (default: ./test-results)
     TEMP_DIR       Temporary directory for test files (default: /tmp/activation-tests)

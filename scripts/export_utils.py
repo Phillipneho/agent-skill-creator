@@ -8,11 +8,9 @@ Packages Claude Code skills for Desktop/Web/API use with versioning and validati
 import os
 import sys
 import zipfile
-import json
 import subprocess
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 # Directories and files to exclude from exports
 EXCLUDE_DIRS = {
@@ -365,140 +363,117 @@ def generate_installation_guide(
 
 """
 
-    content += """---
+    content += f"""---
 
-## 🚀 Installation Instructions
+## Cross-Platform Installation
 
-### For Claude Desktop
+This skill works on all platforms supporting the Agent Skills Open Standard.
 
-1. **Locate the Desktop package**
-   - File: `{skill}-desktop-{version}.zip`
+### Using install.sh (Recommended)
 
-2. **Open Claude Desktop**
-   - Launch the Claude Desktop application
+If the skill includes an `install.sh` script:
 
-3. **Navigate to Skills settings**
-   - Go to: **Settings → Capabilities → Skills**
+```bash
+# Auto-detect platform and install
+./install.sh
 
-4. **Upload the skill**
-   - Click: **Upload skill**
-   - Select the desktop package .zip file
-   - Wait for upload confirmation
+# Install to specific platform
+./install.sh --platform claude-code
+./install.sh --platform copilot
+./install.sh --platform cursor
 
-5. **Verify installation**
-   - The skill should now appear in your Skills list
-   - Try using it with a relevant query
+# Project-level install
+./install.sh --project
 
-✅ **Your skill is now available in Claude Desktop!**
+# Preview without installing
+./install.sh --dry-run
+```
 
----
+### Manual Installation by Platform
 
-### For claude.ai (Web Interface)
+#### Claude Code
+```bash
+# User-level
+cp -r {skill_name}/ ~/.claude/skills/{skill_name}/
 
-1. **Locate the Desktop package**
-   - File: `{skill}-desktop-{version}.zip`
-   - (Same package as Desktop - optimized for both)
+# Project-level
+cp -r {skill_name}/ .claude/skills/{skill_name}/
+```
 
-2. **Visit claude.ai**
-   - Open https://claude.ai in your browser
-   - Log in to your account
+#### GitHub Copilot
+```bash
+cp -r {skill_name}/ .github/skills/{skill_name}/
+```
 
-3. **Open Settings**
-   - Click your profile icon
-   - Select **Settings**
+#### Cursor
+```bash
+cp -r {skill_name}/ .cursor/rules/{skill_name}/
+```
 
-4. **Navigate to Skills**
-   - Click on the **Skills** section
+#### Windsurf
+```bash
+cp -r {skill_name}/ .windsurf/skills/{skill_name}/
+```
 
-5. **Upload the skill**
-   - Click: **Upload skill**
-   - Select the desktop package .zip file
-   - Confirm the upload
+#### Cline
+```bash
+cp -r {skill_name}/ .clinerules/{skill_name}/
+```
 
-6. **Start using**
-   - Create a new conversation
-   - The skill will activate automatically when relevant
+#### OpenAI Codex CLI
+```bash
+cp -r {skill_name}/ .codex/skills/{skill_name}/
+```
 
-✅ **Your skill is now available at claude.ai!**
+#### Gemini CLI
+```bash
+cp -r {skill_name}/ .gemini/skills/{skill_name}/
+```
 
----
+### Claude Desktop / claude.ai (Web)
 
-### For Claude API (Programmatic Integration)
+1. Locate the Desktop package: `{skill_name}-desktop-{{version}}.zip`
+2. Open Claude Desktop or claude.ai
+3. Go to **Settings > Skills > Upload skill**
+4. Select the .zip file and confirm
 
-1. **Locate the API package**
-   - File: `{skill}-api-{version}.zip`
-   - Optimized for API use (smaller, execution-focused)
+### Claude API
 
-2. **Install required packages**
-   ```bash
-   pip install anthropic
-   ```
-
-3. **Upload skill programmatically**
-   ```python
-   import anthropic
-
-   client = anthropic.Anthropic(api_key="your-api-key")
-
-   # Upload the skill
-   with open('{skill}-api-{version}.zip', 'rb') as f:
-       skill = client.skills.create(
-           file=f,
-           name="{skill}"
-       )
-
-   print(f"Skill uploaded! ID: {{skill.id}}")
-   ```
-
-4. **Use in API requests**
-   ```python
-   response = client.messages.create(
-       model="claude-sonnet-4",
-       messages=[
-           {{"role": "user", "content": "Your query here"}}
-       ],
-       container={{
-           "type": "custom_skill",
-           "skill_id": skill.id
-       }},
-       betas=[
-           "code-execution-2025-08-25",
-           "skills-2025-10-02"
-       ]
-   )
-
-   print(response.content)
-   ```
-
-5. **Important API requirements**
-   - Must include beta headers: `code-execution-2025-08-25` and `skills-2025-10-02`
-   - Maximum 8 skills per request
-   - Skills run in isolated containers (no network access, no pip install)
-
-✅ **Your skill is now integrated with the Claude API!**
+1. Locate the API package: `{skill_name}-api-{{version}}.zip`
+2. Upload programmatically:
+```python
+import anthropic
+client = anthropic.Anthropic()
+with open('{skill_name}-api-{{version}}.zip', 'rb') as f:
+    skill = client.skills.create(file=f, name="{skill_name}")
+```
 
 ---
 
-## 📋 Platform Comparison
+## Platform Comparison
 
-| Feature | Claude Code | Desktop/Web | Claude API |
-|---------|-------------|-------------|------------|
-| **Installation** | Plugin command | Manual upload | Programmatic |
-| **Updates** | Git pull | Re-upload .zip | New upload |
-| **Version Control** | ✅ Native | ⚠️ Manual | ✅ Versioned |
-| **Team Sharing** | ✅ Via plugins | ❌ Individual | ✅ Via API |
-| **marketplace.json** | ✅ Used | ❌ Ignored | ❌ Not used |
+| Platform | Install Method | Updates | marketplace.json |
+|----------|---------------|---------|-----------------|
+| **Claude Code** | install.sh / copy | git pull | Optional |
+| **GitHub Copilot** | install.sh / copy | git pull | Not used |
+| **Cursor** | install.sh / copy | git pull | Not used |
+| **Windsurf** | install.sh / copy | git pull | Not used |
+| **Cline** | install.sh / copy | git pull | Not used |
+| **Codex CLI** | install.sh / copy | git pull | Not used |
+| **Gemini CLI** | install.sh / copy | git pull | Not used |
+| **Desktop/Web** | .zip upload | Re-upload | Not used |
+| **Claude API** | API upload | New upload | Not used |
 
 ---
 
-## ⚙️ Technical Details
+## Technical Details
 
 ### What's Included
 
 """
 
     if desktop_package and desktop_package['success']:
-        content += f"""**Desktop Package:**
+        content += """**Desktop Package:**
 - SKILL.md (core functionality)
 - Complete scripts/ directory
 - Full references/ documentation
@@ -508,7 +483,7 @@ def generate_installation_guide(
 """
 
     if api_package and api_package['success']:
-        content += f"""**API Package:**
+        content += """**API Package:**
 - SKILL.md (required)
 - Essential scripts only
 - Minimal documentation (execution-focused)
@@ -585,7 +560,7 @@ After installation, verify:
 
 **Need help?** Refer to the platform-specific documentation or the main repository guides.
 
-**Generated by:** agent-skill-creator v3.2 cross-platform export system
+**Generated by:** agent-skill-creator v4.0 cross-platform export system
 """
 
     # Write guide to file
@@ -598,6 +573,7 @@ After installation, verify:
 def export_skill(
     skill_path: str,
     variants: List[str] = ['desktop', 'api'],
+    platform: str = None,
     version_override: str = None,
     output_dir: str = None
 ) -> Dict:
@@ -607,6 +583,7 @@ def export_skill(
     Args:
         skill_path: Path to skill directory
         variants: List of variants to create ('desktop', 'api', or both)
+        platform: Target platform for platform-specific output (optional)
         version_override: User-specified version (optional)
         output_dir: Where to save exports (default: exports/ in parent dir)
 
@@ -637,6 +614,54 @@ def export_skill(
         }
     print("✅ Skill structure valid")
 
+    # Run spec validation if validate.py is available
+    validate_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'validate.py')
+    if os.path.exists(validate_script):
+        print("🔍 Running spec validation...")
+        try:
+            result = subprocess.run(
+                [sys.executable, validate_script, skill_path, '--json'],
+                capture_output=True, text=True, timeout=30
+            )
+            if result.returncode != 0:
+                import json as _json
+                try:
+                    val_result = _json.loads(result.stdout)
+                    if val_result.get('errors'):
+                        print(f"⚠️  Spec validation warnings: {len(val_result['errors'])} errors")
+                        for err in val_result['errors']:
+                            print(f"   - {err}")
+                except (ValueError, KeyError):
+                    pass
+            else:
+                print("✅ Spec validation passed")
+        except (subprocess.TimeoutExpired, Exception):
+            print("⚠️  Spec validation skipped (script error)")
+
+    # Run security scan if security_scan.py is available
+    security_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'security_scan.py')
+    if os.path.exists(security_script):
+        print("🔍 Running security scan...")
+        try:
+            result = subprocess.run(
+                [sys.executable, security_script, skill_path, '--json'],
+                capture_output=True, text=True, timeout=30
+            )
+            if result.returncode != 0:
+                import json as _json
+                try:
+                    sec_result = _json.loads(result.stdout)
+                    if sec_result.get('issues'):
+                        print(f"⚠️  Security issues found: {len(sec_result['issues'])}")
+                        for issue in sec_result['issues'][:5]:
+                            print(f"   - [{issue.get('severity', 'unknown')}] {issue.get('description', '')}")
+                except (ValueError, KeyError):
+                    pass
+            else:
+                print("✅ Security scan passed")
+        except (subprocess.TimeoutExpired, Exception):
+            print("⚠️  Security scan skipped (script error)")
+
     # Determine version
     version = get_skill_version(skill_path, version_override)
     print(f"📌 Version: {version}")
@@ -649,7 +674,7 @@ def export_skill(
     }
 
     if 'desktop' in variants:
-        print(f"\n🔨 Creating Desktop/Web package...")
+        print("\n🔨 Creating Desktop/Web package...")
         desktop_result = create_export_package(
             skill_path, output_dir, 'desktop', version, skill_name
         )
@@ -661,7 +686,7 @@ def export_skill(
             results['success'] = False
 
     if 'api' in variants:
-        print(f"\n🔨 Creating API package...")
+        print("\n🔨 Creating API package...")
         api_result = create_export_package(
             skill_path, output_dir, 'api', version, skill_name
         )
@@ -674,7 +699,7 @@ def export_skill(
 
     # Generate installation guide
     if results['success']:
-        print(f"\n📄 Generating installation guide...")
+        print("\n📄 Generating installation guide...")
         guide_path = generate_installation_guide(
             skill_name,
             version,
@@ -703,10 +728,10 @@ Options:
   --output-dir DIR        Output directory (default: exports/)
 
 Examples:
-  python export_utils.py ./my-skill-cskill
-  python export_utils.py ./my-skill-cskill --variant desktop
-  python export_utils.py ./my-skill-cskill --version 2.0.1
-  python export_utils.py ./my-skill-cskill --variant api --output-dir ./dist
+  python export_utils.py ./my-skill
+  python export_utils.py ./my-skill --variant desktop
+  python export_utils.py ./my-skill --version 2.0.1
+  python export_utils.py ./my-skill --variant api --output-dir ./dist
 """)
         sys.exit(1)
 
@@ -744,7 +769,7 @@ Examples:
     print(f"\n{'='*60}")
     if results['success']:
         print("✅ Export completed successfully!")
-        print(f"\n📦 Packages created:")
+        print("\n📦 Packages created:")
         for variant, package in results['packages'].items():
             if package['success']:
                 print(f"   - {variant.capitalize()}: {os.path.basename(package['zip_path'])}")

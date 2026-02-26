@@ -675,8 +675,7 @@ and chart patterns. Generates buy and sell signals based on technical indicators
 
 ## 🎓 Learning from Examples
 
-### Excellent Example: stock-analyzer-cskill
-
+### Excellent Example: stock-analyzer
 **What makes it excellent:**
 
 ✅ **Complete keyword coverage (15 keywords)**
@@ -718,7 +717,7 @@ Convergence Divergence), Bollinger Bands..."
 
 **Result:** 98% activation reliability
 
-**Location:** `references/examples/stock-analyzer-cskill/`
+**Location:** `references/examples/stock-analyzer/`
 
 ---
 
@@ -735,7 +734,7 @@ Convergence Divergence), Bollinger Bands..."
 - **README Template**: `templates/README-activation-template.md`
 
 ### Examples
-- **Complete Example**: `examples/stock-analyzer-cskill/`
+- **Complete Example**: `examples/stock-analyzer/`
 
 ---
 
