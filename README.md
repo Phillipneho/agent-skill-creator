@@ -1,154 +1,203 @@
-# Agent Skill Creator v4.0
+# Agent Skill Creator
 
-**Create Cross-Platform Agent Skills from Workflow Descriptions**
+**Create cross-platform agent skills from natural language workflow descriptions.**
 
 [![Agent Skills Open Standard](https://img.shields.io/badge/Agent%20Skills-Open%20Standard-blue)](https://github.com/anthropics/agent-skills-spec)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-4.0.0-brightgreen)]()
-
-> Works on **8+ platforms**: Claude Code, GitHub Copilot, Cursor, Windsurf, Cline, Codex CLI, Gemini CLI, and any platform supporting the Agent Skills Open Standard.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 ---
 
-## What It Does
+## What Is This?
 
-Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Describe a repetitive workflow in natural language, and it generates a complete, validated, cross-platform agent skill through an autonomous 5-phase pipeline.
+Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Describe a repetitive workflow in plain English and it generates a complete, validated, cross-platform agent skill through an autonomous 5-phase pipeline.
 
-**Input**: A workflow description like *"Every day I download stock data, analyze trends, and create reports"*
-
+**Input**: *"Every day I download stock data, analyze trends, and create reports"*
 **Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md.
 
 ---
 
 ## Quick Start
 
-### Install
+### Claude Code
 
 ```bash
-# Clone and install as a Claude Code skill
-git clone https://github.com/user/agent-skill-creator.git
-cp -r agent-skill-creator/ ~/.claude/skills/agent-skill-creator/
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 ```
 
-### Use
+### GitHub Copilot
 
-Just describe what you need in your agent:
-
-```
-"Create a skill for analyzing stock market data"
-
-"Every day I process CSV files manually, automate this"
-
-"Create a cross-platform skill for weather alerts"
-
-"Validate this skill for spec compliance"
-
-"Export this skill for Cursor and Copilot"
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
 ```
 
-The skill creator activates automatically when it detects these patterns and walks through the full pipeline.
+### Cursor
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
+```
+
+After installing, open your agent and type:
+
+```
+Create a skill for analyzing CSV files
+```
+
+The skill creator activates and walks you through the full pipeline.
+
+For Windsurf, Cline, Codex CLI, Gemini CLI, and other platforms see [Setup by Platform](#setup-by-platform-complete-guide) below.
 
 ---
 
-## Supported Platforms
+## Usage
 
-Generated skills work on any platform that supports the Agent Skills Open Standard:
+### Trigger Phrases
 
-| Platform | Install Location | Notes |
-|----------|-----------------|-------|
-| **Claude Code** | `~/.claude/skills/` or `.claude/skills/` | Global or per-project |
-| **GitHub Copilot** | `.github/skills/` | Repository-level |
-| **Cursor** | `.cursor/rules/` | Workspace rules |
-| **Windsurf** | `.windsurf/skills/` | Workspace skills |
-| **Cline** | `.clinerules/` | Rule-based skills |
-| **Codex CLI** | `.codex/skills/` | OpenAI Codex CLI |
-| **Gemini CLI** | `.gemini/skills/` | Google Gemini CLI |
+Say any of these to your agent:
 
-Each generated skill includes an `install.sh` script that auto-detects your platform and installs to the correct location.
+```
+"Create a skill for analyzing stock market data"
+"Every day I process CSV files manually, automate this"
+"Create a cross-platform skill for weather alerts"
+"Automate this workflow"
+"I need to automate [repetitive task]"
+"Validate this skill"
+"Export this skill for Cursor and Copilot"
+"Migrate this skill to v4"
+```
+
+### What Happens
+
+The creator runs a **5-phase autonomous pipeline**:
+
+```
+Phase 1: DISCOVERY        Research APIs, data sources, and domain knowledge
+          |
+Phase 2: DESIGN           Define use cases, methodologies, and outputs
+          |
+Phase 3: ARCHITECTURE     Structure skill directory (simple vs. complex suite)
+          |
+Phase 4: DETECTION        Generate description + keywords for reliable activation
+          |
+Phase 5: IMPLEMENTATION   Create all files, run validation, run security scan
+```
+
+Output: a complete skill directory you can install on any supported platform.
+
+---
+
+## Setup by Platform (Complete Guide)
+
+Each platform installs with a single `git clone` directly into the right location. Replace `agent-skill-creator` with the skill name when installing generated skills.
+
+### Claude Code
+
+```bash
+# Personal skill (available in all projects)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
+
+# Per-project (scoped to one repo)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .claude/skills/agent-skill-creator
+```
+
+### GitHub Copilot (CLI + VS Code)
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+```
+
+### Cursor
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
+```
+
+Cursor reads SKILL.md natively alongside its `.mdc` rules.
+
+### Windsurf
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/skills/agent-skill-creator
+```
+
+### Cline
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/agent-skill-creator
+```
+
+### OpenAI Codex CLI
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .codex/skills/agent-skill-creator
+```
+
+### Gemini CLI
+
+```bash
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .gemini/skills/agent-skill-creator
+```
+
+### Claude Desktop / claude.ai (Export)
+
+These platforms use `.zip` upload instead of directory copying:
+
+1. Export: `python3 scripts/export_utils.py ./agent-skill-creator/ --variant desktop`
+2. Open Claude Desktop or claude.ai
+3. Go to Settings > Skills > Upload skill
+4. Select the generated `.zip` file
+
+### Claude API (Programmatic)
+
+```bash
+python3 scripts/export_utils.py ./agent-skill-creator/ --variant api
+```
+
+```python
+import anthropic
+
+client = anthropic.Anthropic()
+
+with open("agent-skill-creator-api-v4.0.0.zip", "rb") as f:
+    skill = client.skills.create(file=f, name="agent-skill-creator")
+
+response = client.messages.create(
+    model="claude-sonnet-4",
+    messages=[{"role": "user", "content": "Your query here"}],
+    container={"type": "custom_skill", "skill_id": skill.id},
+    betas=["code-execution-2025-08-25", "skills-2025-10-02"],
+)
+```
+
+Note: API sandbox has no network access, no pip install at runtime, and an 8 MB size limit.
+
+### Updating
+
+To update an installed skill, just `git pull` from inside the skill directory:
+
+```bash
+cd ~/.claude/skills/agent-skill-creator && git pull
+```
 
 ---
 
 ## How It Works
 
-The creator runs a **5-phase autonomous pipeline**:
-
-```
-Phase 1: DISCOVERY        Research APIs, data sources, tools, and domain knowledge
-                          |
-Phase 2: DESIGN           Define use cases, analyses, methodologies, and outputs
-                          |
-Phase 3: ARCHITECTURE     Structure skill directory (simple skill vs. complex suite)
-                          |
-Phase 4: DETECTION        Generate description + keywords for reliable activation
-                          |
-Phase 5: IMPLEMENTATION   Create all files, run validation, run security scan
-```
-
-### Phase Details
-
 | Phase | What Happens | Key Output |
 |-------|-------------|------------|
-| **Discovery** | Researches the domain, identifies APIs and data sources, maps user needs | Domain model, API list, data sources |
+| **Discovery** | Researches the domain, identifies APIs and data sources | Domain model, API list |
 | **Design** | Defines use cases, analysis methods, output formats | Use case specs, methodology docs |
 | **Architecture** | Decides simple skill vs. complex suite, plans directory structure | Architecture decision, file plan |
-| **Detection** | Crafts SKILL.md description and activation keywords for reliable triggering | SKILL.md frontmatter, trigger phrases |
-| **Implementation** | Generates all code, docs, installer; validates and scans for security issues | Complete skill directory |
+| **Detection** | Crafts SKILL.md description and activation keywords | SKILL.md frontmatter, trigger phrases |
+| **Implementation** | Generates all code, docs, installer; validates and scans | Complete skill directory |
 
 For full pipeline documentation, see [references/pipeline-phases.md](references/pipeline-phases.md).
 
 ---
 
-## Architecture: Simple Skill vs. Complex Suite
-
-The creator automatically decides the right architecture based on scope:
-
-### Simple Skill
-
-For focused, single-domain tasks (e.g., "analyze CSV files", "extract text from PDFs").
-
-```
-stock-analyzer/
-  SKILL.md              # Under 500 lines, spec-compliant
-  scripts/
-    analyze.py
-    fetch_data.py
-  references/
-    api-guide.md
-  assets/
-    report-template.html
-  install.sh
-  README.md
-```
-
-### Complex Suite
-
-For multi-domain workflows requiring coordinated agents (e.g., "full financial analysis pipeline with data collection, analysis, and reporting").
-
-```
-financial-analysis-suite/
-  SKILL.md              # Suite orchestrator, under 500 lines
-  scripts/
-    orchestrator.py
-    data_collector.py
-    analyzer.py
-    report_generator.py
-  references/
-    architecture-guide.md
-    api-reference.md
-  assets/
-    templates/
-    schemas/
-  install.sh
-  README.md
-```
-
-For detailed architecture guidance, see [references/architecture-guide.md](references/architecture-guide.md).
-
----
-
 ## Generated Skill Format
 
-Every generated skill follows the Agent Skills Open Standard structure:
+Every generated skill follows the Agent Skills Open Standard:
 
 ```
 skill-name/
@@ -160,9 +209,7 @@ skill-name/
   README.md             # Multi-platform install instructions
 ```
 
-### SKILL.md Structure
-
-The generated SKILL.md includes standard frontmatter:
+### SKILL.md Frontmatter
 
 ```yaml
 ---
@@ -182,45 +229,26 @@ compatibility: >-
 
 Followed by sections: When to Use, Overview, Workflow, Implementation Guidelines, and References.
 
----
-
-## Naming Convention
-
-Skills follow the **Agent Skills Open Standard** naming rules:
-
-- **Format**: `kebab-case` (lowercase letters and hyphens only)
-- **Length**: 1-64 characters
-- **Pattern**: `^[a-z][a-z0-9-]*[a-z0-9]$`
-- **No special suffixes** required
-
-### Examples
-
-| Good | Bad |
-|------|-----|
-| `stock-analyzer` | `Stock_Analyzer` |
-| `csv-data-cleaner` | `csv_data_cleaner` |
-| `financial-analysis-suite` | `FinancialAnalysis` |
-| `weather-alerts` | `weather-alerts-cskill` |
+**Naming rules**: `kebab-case`, 1-64 characters, pattern `^[a-z][a-z0-9-]*[a-z0-9]$`, must match directory name.
 
 ---
 
-## Validation and Security
+## Tools
 
 ### Validate a Skill
 
-Check that a generated skill is compliant with the Agent Skills Open Standard:
+Check spec compliance against the Agent Skills Open Standard:
 
 ```bash
 python3 scripts/validate.py ./my-skill/
+
+# JSON output (for CI/CD)
+python3 scripts/validate.py ./my-skill/ --json
 ```
 
-Validates:
-- SKILL.md exists and has valid frontmatter
-- Name follows kebab-case convention (1-64 chars)
-- Description is under 1024 characters
-- SKILL.md is under 500 lines
-- Required directory structure is present
-- install.sh exists and is executable
+**Checks**: SKILL.md existence, valid frontmatter, kebab-case name (1-64 chars), description under 1024 chars, body under 500 lines, required directory structure, install.sh exists and is executable.
+
+**Exit codes**: `0` = valid (may have warnings), `1` = invalid (errors found).
 
 ### Security Scan
 
@@ -228,165 +256,209 @@ Scan for common security issues before sharing or deploying:
 
 ```bash
 python3 scripts/security_scan.py ./my-skill/
+
+# JSON output
+python3 scripts/security_scan.py ./my-skill/ --json
 ```
 
-Detects:
-- Hardcoded API keys, tokens, and secrets
-- Potential command injection patterns
-- Unsafe file operations
-- Credential exposure in configuration files
+**Detects**: hardcoded API keys (OpenAI, AWS, GitHub, GitLab), tokens and secrets, command injection patterns, unsafe file operations, credential exposure in config files.
 
----
+**Exit codes**: `0` = clean, `1` = issues found.
 
-## Cross-Platform Export
+### Export for Other Platforms
 
-Export skills for different deployment targets:
-
-### Desktop/Web Export
-
-Generates a `.zip` archive suitable for sharing or manual installation:
+Package skills for distribution:
 
 ```bash
+# Desktop/Web (.zip for Claude Desktop, claude.ai)
 python3 scripts/export_utils.py ./my-skill/ --variant desktop
+
+# API (.zip for Claude API, <=8MB)
+python3 scripts/export_utils.py ./my-skill/ --variant api
+
+# All variants
+python3 scripts/export_utils.py ./my-skill/
 ```
 
-### API Export
+Output goes to `exports/`. See [references/export-guide.md](references/export-guide.md) for full documentation.
 
-Generates a package suitable for Claude API integration:
+### Skill Registry
+
+Manage a shared skill catalog for teams using a git-based registry:
 
 ```bash
-python3 scripts/export_utils.py ./my-skill/ --variant api
+# Initialize a registry
+python3 scripts/skill_registry.py init --registry ./my-registry --name "Team Skills"
+
+# Publish a skill (validates and security-scans first)
+python3 scripts/skill_registry.py publish ./my-skill/ --registry ./my-registry --tags data,csv
+
+# List all published skills
+python3 scripts/skill_registry.py list --registry ./my-registry
+
+# Search for skills
+python3 scripts/skill_registry.py search "finance" --registry ./my-registry
+
+# Show full details about a skill
+python3 scripts/skill_registry.py info stock-analyzer --registry ./my-registry
+
+# Install a skill for a specific platform
+python3 scripts/skill_registry.py install stock-analyzer --registry ./my-registry --platform claude-code
+
+# Install at project level instead of user level
+python3 scripts/skill_registry.py install stock-analyzer --registry ./my-registry --project
+
+# Remove a skill from the registry
+python3 scripts/skill_registry.py remove stock-analyzer --registry ./my-registry --force
 ```
 
-For full export documentation, see [references/export-guide.md](references/export-guide.md).
+All commands support `--json` for machine-readable output. The registry is a plain directory with `registry.json` and `skills/` — commit it to git for version history, access control via repo permissions, and review workflow via PRs.
+
+**Exit codes**: `0` = success, `1` = error.
 
 ---
 
-## Example Skill
+## Architecture Decisions
 
-The repository includes a complete example skill:
+The creator automatically decides simple vs. complex based on scope:
 
-### article-to-prototype
+| Factor | Simple Skill | Complex Suite |
+|--------|-------------|---------------|
+| Workflows | 1-2 | 3+ distinct |
+| Code size | <1000 lines | >2000 lines |
+| Structure | Single SKILL.md | Multiple component SKILL.md files |
 
-Converts academic articles and research papers into functional prototypes. Demonstrates the full skill structure including scripts, references, and cross-platform installer.
-
-```
-article-to-prototype/
-  SKILL.md
-  scripts/
-    article_processor.py
-    prototype_generator.py
-    validation_engine.py
-  references/
-    methodology.md
-    supported-formats.md
-  assets/
-    prototype-templates/
-  install.sh
-  README.md
-```
-
-See [article-to-prototype/](article-to-prototype/) for the full example.
+For detailed decision logic, see [references/architecture-guide.md](references/architecture-guide.md).
 
 ---
 
-## Project Structure
+## For AI Agents (Machine-Readable Reference)
 
-The agent-skill-creator repository itself:
+This section provides structured metadata for AI agents ingesting this README as context.
+
+### Activation Triggers
 
 ```
-agent-skill-creator/
-  SKILL.md                    # Meta-skill definition (this skill's spec)
-  README.md                   # This file
-  MIGRATION.md                # v3.x to v4.0 migration guide
-  .gitignore
-  scripts/
-    validate.py               # Spec compliance validator
-    security_scan.py           # Security scanner
-    export_utils.py            # Cross-platform export tool
-    install-template.sh        # Template for generated install.sh
-  references/
-    pipeline-phases.md         # Full 5-phase pipeline docs
-    architecture-guide.md      # Simple skill vs. complex suite
-    cross-platform-guide.md    # Platform-specific details
-    export-guide.md            # Export system documentation
-    phase1-discovery.md        # Phase 1 deep dive
-    phase2-design.md           # Phase 2 deep dive
-    phase3-architecture.md     # Phase 3 deep dive
-    phase4-detection.md        # Phase 4 deep dive
-    phase5-implementation.md   # Phase 5 deep dive
-    phase6-testing.md          # Testing guide
-    quality-standards.md       # Quality standards reference
-    templates-guide.md         # Template system guide
-    templates/                 # Skill templates
-    tools/                     # Validation and scanning tools
-    examples/                  # Example configurations
-  integrations/
-    agentdb_bridge.py          # AgentDB integration bridge
-    agentdb_real_integration.py
-    fallback_system.py         # Graceful degradation system
-    learning_feedback.py       # Learning loop integration
-    validation_system.py       # Integration validation
-  article-to-prototype/       # Example generated skill
-  exports/                    # Export output directory
-  docs/                       # Additional documentation
-    CHANGELOG.md              # Version history
-    NAMING_CONVENTIONS.md     # Naming rules reference
-    PIPELINE_ARCHITECTURE.md  # Pipeline internals
-    DECISION_LOGIC.md         # Architecture decision logic
-    CLAUDE_SKILLS_ARCHITECTURE.md
+create an agent for [objective]
+create a skill for [domain]
+develop a custom skill
+automate this workflow
+every day I [task]
+I repeatedly need to [process]
+I need to automate [task]
+create a cross-platform skill for [objective]
+validate this skill
+check if this skill is spec-compliant
+export this skill for [platform]
+package this skill for [platform]
+migrate this skill to v4
+update this skill to the new standard
+create a multi-agent suite for [objective]
+create a skill from the [name] template
 ```
 
+### Install Commands
+
+```bash
+# Claude Code (personal)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
+# GitHub Copilot
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+# Cursor
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
+# Windsurf
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/skills/agent-skill-creator
+# Cline
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/agent-skill-creator
+# Codex CLI
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .codex/skills/agent-skill-creator
+# Gemini CLI
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .gemini/skills/agent-skill-creator
+# Update
+cd <install-path>/agent-skill-creator && git pull
+```
+
+### Tool Commands
+
+```bash
+# Validate
+python3 scripts/validate.py PATH      # Human output
+python3 scripts/validate.py PATH --json  # Machine output
+
+# Security scan
+python3 scripts/security_scan.py PATH
+python3 scripts/security_scan.py PATH --json
+
+# Export
+python3 scripts/export_utils.py PATH --variant desktop
+python3 scripts/export_utils.py PATH --variant api
+
+# Registry
+python3 scripts/skill_registry.py init --registry PATH --name NAME
+python3 scripts/skill_registry.py publish SKILL_PATH --registry PATH --tags T1,T2
+python3 scripts/skill_registry.py list --registry PATH [--json]
+python3 scripts/skill_registry.py search QUERY --registry PATH [--json]
+python3 scripts/skill_registry.py install SKILL_NAME --registry PATH --platform PLATFORM
+python3 scripts/skill_registry.py info SKILL_NAME --registry PATH [--json]
+python3 scripts/skill_registry.py remove SKILL_NAME --registry PATH --force
+```
+
+### Platform Paths
+
+| Platform | Path | Scope |
+|----------|------|-------|
+| Claude Code | `~/.claude/skills/` | User-level |
+| Claude Code | `.claude/skills/` | Project-level |
+| GitHub Copilot | `.github/skills/` | Project-level |
+| Cursor | `.cursor/rules/` | Workspace |
+| Windsurf | `.windsurf/skills/` | Workspace |
+| Cline | `.clinerules/` | Workspace |
+| Codex CLI | `.codex/skills/` | Workspace |
+| Gemini CLI | `.gemini/skills/` | Workspace |
+| Claude Desktop | `.zip` upload | App-level |
+| claude.ai | `.zip` upload | Web |
+| Claude API | `.zip` via API | Programmatic |
+
+### SKILL.md Spec (Required Fields)
+
+```yaml
 ---
-
-## Activation Triggers
-
-The skill creator activates when it detects phrases like:
-
-- "Create an agent for ..."
-- "Create a skill for ..."
-- "Automate this workflow"
-- "Every day I have to ..."
-- "I need to automate ..."
-- "Create a cross-platform skill for ..."
-- "Validate this skill"
-- "Export this skill for [platform]"
-- "Migrate this skill to v4"
-
-See [references/phase4-detection.md](references/phase4-detection.md) for the full activation pattern reference.
-
+name: kebab-case-name          # 1-64 chars, ^[a-z][a-z0-9-]*[a-z0-9]$
+description: >-                # 1-1024 chars, include activation keywords
+  What this skill does...
+license: MIT
+metadata:
+  author: Author Name
+  version: X.Y.Z
 ---
+# Body: <500 lines. Move detailed content to references/.
+```
 
-## AgentDB Integration (Optional)
+### Pipeline Phases
 
-Skills can optionally integrate with AgentDB for persistent learning across sessions:
+```
+DISCOVERY -> DESIGN -> ARCHITECTURE -> DETECTION -> IMPLEMENTATION
+```
 
-- **Learning feedback**: Skills improve based on usage patterns
-- **Cross-session memory**: Retain context between conversations
-- **Performance metrics**: Track skill effectiveness over time
-
-AgentDB is not required. Skills work fully without it. See [references/agentdb-integration.md](references/agentdb-integration.md) for setup details.
+Each phase is documented in `references/phase{1..5}-*.md`.
 
 ---
 
 ## Migration from v3.x
 
-If you have skills created with v3.x of agent-skill-creator:
+Key changes in v4.0:
 
-**Key changes in v4.0:**
 - `-cskill` suffix removed from skill names (use standard kebab-case)
-- `marketplace.json` simplified (optional for simple skills)
 - SKILL.md body limited to 500 lines (move detail to `references/`)
 - `install.sh` cross-platform installer added
 - Spec validation and security scanning tools added
+- `marketplace.json` simplified (optional for simple skills)
 
-**Quick migration:**
+Quick migration:
+
 ```bash
-# Rename directory (remove -cskill suffix)
 mv my-skill-cskill/ my-skill/
-
-# Update SKILL.md name field
-# Validate the migrated skill
+# Update SKILL.md name field to remove -cskill suffix
 python3 scripts/validate.py ./my-skill/
 ```
 
@@ -394,37 +466,64 @@ For the complete migration guide, see [MIGRATION.md](MIGRATION.md).
 
 ---
 
-## Advanced Features
+## Troubleshooting
 
-### Interactive Mode
+**Skill not activating**: Ensure SKILL.md `description` field contains the trigger phrases you expect. The description is the primary activation mechanism.
 
-For complex skills, the creator can run in interactive mode, asking clarifying questions before generating:
+**Validation fails on name**: Names must be kebab-case, 1-64 characters, no consecutive hyphens, no leading/trailing hyphens. Pattern: `^[a-z][a-z0-9-]*[a-z0-9]$`.
 
-```
-"Create a skill for financial analysis" (interactive)
-```
+**SKILL.md too long**: Body must be under 500 lines. Move detailed documentation to `references/` and link from the main SKILL.md.
 
-See [references/interactive-mode.md](references/interactive-mode.md).
+**Export fails with size error**: API exports have an 8 MB limit. Reduce asset sizes or exclude large files.
 
-### Multi-Agent Suites
+**install.sh not executable**: Run `chmod +x install.sh` before executing.
 
-Create coordinated multi-agent systems where specialized agents collaborate:
+**Platform not auto-detected**: Use `./install.sh --platform <name>` to specify explicitly.
 
-```
-"Create a multi-agent suite for end-to-end data pipeline"
-```
+---
 
-See [references/multi-agent-guide.md](references/multi-agent-guide.md).
-
-### Template-Based Creation
-
-Use pre-built templates to accelerate skill creation:
+## Project Structure
 
 ```
-"Create a skill from the data-analysis template"
+agent-skill-creator/
+  SKILL.md                      # Meta-skill definition
+  README.md                     # This file
+  MIGRATION.md                  # v3.x to v4.0 migration guide
+  scripts/
+    validate.py                 # Spec compliance validator
+    security_scan.py            # Security scanner
+    export_utils.py             # Cross-platform export tool
+    skill_registry.py           # Git-based shared skill registry
+    install-template.sh         # Template for generated install.sh
+  references/
+    pipeline-phases.md          # Full 5-phase pipeline docs
+    architecture-guide.md       # Simple skill vs. complex suite
+    cross-platform-guide.md     # Platform-specific details
+    export-guide.md             # Export system documentation
+    phase1-discovery.md         # Phase 1 deep dive
+    phase2-design.md            # Phase 2 deep dive
+    phase3-architecture.md      # Phase 3 deep dive
+    phase4-detection.md         # Phase 4 deep dive
+    phase5-implementation.md    # Phase 5 deep dive
+    phase6-testing.md           # Testing guide
+    quality-standards.md        # Quality standards reference
+    templates-guide.md          # Template system guide
+    templates/                  # Skill templates
+    tools/                      # Validation and scanning tools
+    examples/                   # Example configurations
+  integrations/
+    agentdb_bridge.py           # AgentDB integration bridge
+    fallback_system.py          # Graceful degradation system
+    learning_feedback.py        # Learning loop integration
+    validation_system.py        # Integration validation
+  article-to-prototype/         # Example generated skill
+  exports/                      # Export output directory
+  docs/
+    CHANGELOG.md                # Version history
+    NAMING_CONVENTIONS.md       # Naming rules reference
+    PIPELINE_ARCHITECTURE.md    # Pipeline internals
+    DECISION_LOGIC.md           # Architecture decision logic
 ```
-
-See [references/templates-guide.md](references/templates-guide.md).
 
 ---
 
@@ -441,7 +540,7 @@ See [references/templates-guide.md](references/templates-guide.md).
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License.
 
 ---
 

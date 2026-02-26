@@ -147,6 +147,34 @@ def _subfield_exists(frontmatter: str, parent: str, child: str) -> bool:
     return False
 
 
+def _parse_subfield_value(frontmatter: str, parent: str, child: str) -> Optional[str]:
+    """
+    Extract a sub-field value from under a parent field in YAML frontmatter.
+
+    Args:
+        frontmatter: The frontmatter text.
+        parent: The parent field name (e.g., ``metadata``).
+        child: The child field name (e.g., ``author``).
+
+    Returns:
+        The sub-field value as a string, or None if not found.
+    """
+    lines = frontmatter.split("\n")
+    in_parent = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(f"{parent}:"):
+            in_parent = True
+            continue
+        if in_parent:
+            if line and (line[0] == " " or line[0] == "\t"):
+                if stripped.startswith(f"{child}:"):
+                    return stripped[len(child) + 1:].strip()
+            else:
+                in_parent = False
+    return None
+
+
 def _extract_local_links(body: str) -> list[str]:
     """
     Extract local file paths referenced in markdown links within the body.
