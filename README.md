@@ -10,10 +10,173 @@
 
 ## What Is This?
 
-Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Describe a repetitive workflow in plain English and it generates a complete, validated, cross-platform agent skill through an autonomous 5-phase pipeline.
+Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Describe a repetitive workflow in plain English and it generates a complete, validated, cross-platform agent skill through an autonomous 5-phase pipeline. Then publish it to the built-in registry so your entire team can install and use it.
 
 **Input**: *"Every day I download stock data, analyze trends, and create reports"*
-**Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md.
+**Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md — published to a shared catalog your team can browse and install from.
+
+---
+
+## Why Agent Skills Matter
+
+AI agents (Claude Code, GitHub Copilot, Cursor, Windsurf, Codex, Gemini) are becoming the primary interface for knowledge work. But out of the box, every agent starts from zero — it doesn't know your company's processes, data sources, naming conventions, or compliance requirements.
+
+**Agent skills solve this.** A skill is structured domain knowledge that an agent loads automatically. Instead of re-explaining your workflow every conversation, the agent already knows how to do it.
+
+**The corporate opportunity:**
+
+- **Without skills**: Every person prompts the agent differently. Knowledge stays in individual chat histories. New hires start from scratch. The same workflow gets re-explained hundreds of times.
+- **With skills**: Someone describes a workflow once. The agent-skill-creator turns it into a reusable skill. It gets published to the team registry. Now every agent on the team — regardless of platform — knows how to do that workflow. Knowledge compounds instead of evaporating.
+
+**What changes in practice:**
+
+1. **Operations teams** describe their runbooks. Skills get created. Now agents can execute standard procedures consistently.
+2. **Data teams** describe their analysis pipelines. Skills get created. Now any team member can run the same analysis by asking their agent.
+3. **Finance teams** describe their reporting workflows. Skills get created. Now quarterly reports follow the same methodology every time.
+4. **Engineering teams** describe their deployment processes, code review standards, testing protocols. Skills get created. Now agents enforce consistency across the organization.
+
+The pattern is always the same: **capture tacit knowledge as skills, share them through the registry, and let agents scale that knowledge across the team.**
+
+This repo is the complete toolkit: create skills from natural language, validate them against the open standard, security-scan them, and share them through a git-based registry that gives you version history, access control, and review workflows for free.
+
+---
+
+## End-to-End Walkthrough
+
+This is the full lifecycle from idea to team-wide adoption.
+
+### Step 1: Install the Skill Creator
+
+Clone this repo into your agent's skill directory:
+
+```bash
+# Claude Code
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
+
+# Cursor
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
+
+# Any other supported platform — see "Setup by Platform" below
+```
+
+### Step 2: Describe a Workflow
+
+Open your agent and describe a repetitive task in plain English:
+
+```
+"Every week I pull sales data from our CRM, clean duplicate entries,
+calculate regional totals, and generate a PDF report for leadership."
+```
+
+The skill creator activates automatically and walks you through its 5-phase pipeline:
+
+```
+DISCOVERY        → Researches CRM APIs, data cleaning techniques, PDF generation
+     |
+DESIGN           → Defines use cases: data pull, dedup, aggregation, report
+     |
+ARCHITECTURE     → Plans the skill directory structure
+     |
+DETECTION        → Crafts activation keywords so the skill triggers reliably
+     |
+IMPLEMENTATION   → Generates all code, docs, and installer
+```
+
+Output: a complete skill directory (e.g., `./sales-report-builder/`) ready to use.
+
+### Step 3: Validate and Scan
+
+Before sharing, verify the skill meets the open standard and has no security issues:
+
+```bash
+python3 scripts/validate.py ./sales-report-builder/
+python3 scripts/security_scan.py ./sales-report-builder/
+```
+
+Both checks run automatically during publishing (Step 4), but you can run them manually anytime.
+
+### Step 4: Publish to the Team Registry
+
+The registry lives inside this repo at `registry/`. Publishing copies the skill into the shared catalog:
+
+```bash
+python3 scripts/skill_registry.py publish ./sales-report-builder/ --tags sales,reports,crm
+```
+
+This validates the skill, runs the security scan, copies the files into `registry/skills/sales-report-builder/`, and updates `registry/registry.json`.
+
+Then commit and push so the team can access it:
+
+```bash
+git add registry/
+git commit -m "feat: Add sales-report-builder skill"
+git push
+```
+
+### Step 5: Team Discovers and Installs Skills
+
+Colleagues pull the latest and browse the catalog:
+
+```bash
+git pull
+
+# What skills are available?
+python3 scripts/skill_registry.py list
+
+# Output:
+# NAME                  VERSION  AUTHOR       TAGS
+# sales-report-builder  1.0.0    sales-team   sales, reports, crm
+# data-quality-checker  1.0.0    data-team    data, validation
+# deploy-checklist      2.0.0    engineering  deploy, ci, checklist
+
+# Search for something specific
+python3 scripts/skill_registry.py search "sales"
+
+# Get full details
+python3 scripts/skill_registry.py info sales-report-builder
+
+# Install it (auto-detects your platform)
+python3 scripts/skill_registry.py install sales-report-builder
+```
+
+### Step 6: Use the Skill
+
+After installing, the skill activates automatically. The colleague just opens their agent and says:
+
+```
+"Generate the weekly sales report for the West region"
+```
+
+The agent recognizes this matches the sales-report-builder skill and executes the workflow — pulling data, cleaning it, calculating totals, and generating the PDF. Same process, same quality, every time.
+
+### Step 7: Iterate
+
+Skills improve over time. Someone adds error handling for API timeouts. Another person adds a new region. They publish updates to the registry, the team pulls, and everyone benefits.
+
+```bash
+# Update and re-publish
+python3 scripts/skill_registry.py publish ./sales-report-builder/ --force
+git add registry/ && git commit -m "fix: Handle CRM API timeouts" && git push
+```
+
+### The Result
+
+Over weeks and months, the registry grows organically. Each team contributes skills from their domain. The organization builds a **living library of operational knowledge** that every agent can access — regardless of which platform (Claude Code, Cursor, Copilot, etc.) each person uses.
+
+```bash
+python3 scripts/skill_registry.py list
+
+# NAME                    VERSION  AUTHOR        TAGS
+# sales-report-builder    1.2.0    sales-team    sales, reports, crm
+# data-quality-checker    1.0.0    data-team     data, validation
+# deploy-checklist        2.1.0    engineering   deploy, ci, checklist
+# quarterly-compliance    1.0.0    legal-team    compliance, audit
+# customer-churn-model    3.0.0    data-science  ml, churn, prediction
+# incident-runbook        1.1.0    sre-team      incidents, on-call
+# onboarding-guide        1.0.0    hr-team       onboarding, new-hire
+```
+
+This is the shift: from individual prompting to organizational capability.
 
 ---
 
