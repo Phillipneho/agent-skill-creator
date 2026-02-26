@@ -15,6 +15,26 @@ Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. De
 **Input**: *"Every day I download stock data, analyze trends, and create reports"*
 **Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md — published to a shared catalog your team can browse and install from.
 
+### Built-in Quality Gates
+
+Every skill goes through automated checks before it reaches your team. You don't need to trust the output blindly — the toolchain enforces quality:
+
+| Gate | What It Checks | When It Runs |
+|------|---------------|--------------|
+| **Spec Validation** | SKILL.md exists, frontmatter is well-formed, name follows kebab-case rules, description under 1024 chars, body under 500 lines | During creation (Phase 5) and on every publish |
+| **Security Scan** | No hardcoded API keys, no exposed credentials, no `eval()`/`exec()` injection risks, no sensitive files (.env, secrets.json) | During creation (Phase 5) and on every publish |
+| **Naming Convention** | Directory name matches SKILL.md `name` field, no consecutive hyphens, 1-64 characters | During validation |
+| **Structure Check** | Required files present, local references resolve, metadata fields populated | During validation |
+
+Skills that fail validation **cannot be published**. Skills with high-severity security issues **are blocked** unless explicitly overridden. This means every skill in the registry has passed both gates — your team can install with confidence.
+
+You can also run these checks independently at any time:
+
+```bash
+python3 scripts/validate.py ./my-skill/          # Spec compliance
+python3 scripts/security_scan.py ./my-skill/      # Security audit
+```
+
 ---
 
 ## Why Agent Skills Matter
@@ -36,6 +56,10 @@ AI agents (Claude Code, GitHub Copilot, Cursor, Windsurf, Codex, Gemini) are bec
 4. **Engineering teams** describe their deployment processes, code review standards, testing protocols. Skills get created. Now agents enforce consistency across the organization.
 
 The pattern is always the same: **capture tacit knowledge as skills, share them through the registry, and let agents scale that knowledge across the team.**
+
+**Why you can trust the output:**
+
+The agent-skill-creator doesn't just generate code and hope for the best. Every skill it produces goes through automated validation (spec compliance) and security scanning (credential detection, injection patterns) before it's ready. When you publish to the registry, both checks run again as a gate — skills that fail cannot be published. This means the skills your team installs are structurally sound, security-reviewed, and follow a consistent standard. You describe the workflow; the toolchain handles the quality assurance.
 
 This repo is the complete toolkit: create skills from natural language, validate them against the open standard, security-scan them, and share them through a git-based registry that gives you version history, access control, and review workflows for free.
 
