@@ -284,35 +284,44 @@ Output goes to `exports/`. See [references/export-guide.md](references/export-gu
 
 ### Skill Registry
 
-Manage a shared skill catalog for teams using a git-based registry:
+Share and discover skills across your team. The registry lives inside this repo (`registry/`) so one `git pull` gives everyone access to all published skills.
+
+**First-time setup** (once per organization):
 
 ```bash
-# Initialize a registry
-python3 scripts/skill_registry.py init --registry ./my-registry --name "Team Skills"
-
-# Publish a skill (validates and security-scans first)
-python3 scripts/skill_registry.py publish ./my-skill/ --registry ./my-registry --tags data,csv
-
-# List all published skills
-python3 scripts/skill_registry.py list --registry ./my-registry
-
-# Search for skills
-python3 scripts/skill_registry.py search "finance" --registry ./my-registry
-
-# Show full details about a skill
-python3 scripts/skill_registry.py info stock-analyzer --registry ./my-registry
-
-# Install a skill for a specific platform
-python3 scripts/skill_registry.py install stock-analyzer --registry ./my-registry --platform claude-code
-
-# Install at project level instead of user level
-python3 scripts/skill_registry.py install stock-analyzer --registry ./my-registry --project
-
-# Remove a skill from the registry
-python3 scripts/skill_registry.py remove stock-analyzer --registry ./my-registry --force
+python3 scripts/skill_registry.py init --name "Acme Corp Skills"
 ```
 
-All commands support `--json` for machine-readable output. The registry is a plain directory with `registry.json` and `skills/` — commit it to git for version history, access control via repo permissions, and review workflow via PRs.
+**Typical workflow:**
+
+```bash
+# Someone describes a workflow, the agent creates a skill
+# "Every week I pull sales data, clean it, and make a report"
+# → agent creates ./sales-report-builder/
+
+# Publish it so the team can use it
+python3 scripts/skill_registry.py publish ./sales-report-builder/ --tags sales,reports
+
+# Browse what the team has built
+python3 scripts/skill_registry.py list
+python3 scripts/skill_registry.py search "sales"
+
+# Get details about a skill
+python3 scripts/skill_registry.py info sales-report-builder
+
+# Install a skill to your platform (auto-detects Claude Code, Cursor, etc.)
+python3 scripts/skill_registry.py install sales-report-builder
+
+# Install for a specific platform or at project level
+python3 scripts/skill_registry.py install sales-report-builder --platform cursor --project
+
+# Remove a skill from the registry
+python3 scripts/skill_registry.py remove sales-report-builder --force
+```
+
+After publishing, commit and push so colleagues can `git pull` and install the new skill.
+
+All commands support `--json` for machine-readable output. Use `--force` to overwrite duplicates or bypass confirmation prompts.
 
 **Exit codes**: `0` = success, `1` = error.
 
@@ -393,14 +402,14 @@ python3 scripts/security_scan.py PATH --json
 python3 scripts/export_utils.py PATH --variant desktop
 python3 scripts/export_utils.py PATH --variant api
 
-# Registry
-python3 scripts/skill_registry.py init --registry PATH --name NAME
-python3 scripts/skill_registry.py publish SKILL_PATH --registry PATH --tags T1,T2
-python3 scripts/skill_registry.py list --registry PATH [--json]
-python3 scripts/skill_registry.py search QUERY --registry PATH [--json]
-python3 scripts/skill_registry.py install SKILL_NAME --registry PATH --platform PLATFORM
-python3 scripts/skill_registry.py info SKILL_NAME --registry PATH [--json]
-python3 scripts/skill_registry.py remove SKILL_NAME --registry PATH --force
+# Registry (default --registry ./registry)
+python3 scripts/skill_registry.py init --name "Team Name"
+python3 scripts/skill_registry.py publish SKILL_PATH --tags T1,T2
+python3 scripts/skill_registry.py list [--json]
+python3 scripts/skill_registry.py search QUERY [--json]
+python3 scripts/skill_registry.py install SKILL_NAME [--platform PLATFORM] [--project]
+python3 scripts/skill_registry.py info SKILL_NAME [--json]
+python3 scripts/skill_registry.py remove SKILL_NAME --force
 ```
 
 ### Platform Paths
@@ -511,6 +520,9 @@ agent-skill-creator/
     templates/                  # Skill templates
     tools/                      # Validation and scanning tools
     examples/                   # Example configurations
+  registry/                      # Shared skill catalog (git-tracked)
+    registry.json               # Skill manifest
+    skills/                     # Published skill directories
   integrations/
     agentdb_bridge.py           # AgentDB integration bridge
     fallback_system.py          # Graceful degradation system
