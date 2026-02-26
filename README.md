@@ -10,9 +10,11 @@
 
 ## What Is This?
 
-Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Describe a repetitive workflow in plain English and it generates a complete, validated, cross-platform agent skill through an autonomous 5-phase pipeline. Then publish it to the built-in registry so your entire team can install and use it.
+Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Install it once, then talk to your agent naturally. Pass in workflow descriptions, documentation, links, existing code, API docs, compliance checklists — whatever you have. The skill creator processes all of it through a structured 5-phase pipeline and produces a complete, validated, security-scanned skill ready for your team to use.
 
-**Input**: *"Every day I download stock data, analyze trends, and create reports"*
+No CLI commands to learn. No templates to fill out. You describe what you need; the agent builds it; the toolchain verifies it.
+
+**Input**: Documentation, links, code, process descriptions — anything that captures the workflow.
 **Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md — published to a shared catalog your team can browse and install from.
 
 ### Built-in Quality Gates
@@ -83,21 +85,48 @@ git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rule
 # Any other supported platform — see "Setup by Platform" below
 ```
 
-### Step 2: Describe a Workflow
+### Step 2: Talk to Your Agent
 
-Open your agent and describe a repetitive task in plain English:
+There's no CLI command to memorize. You just open your agent (Claude Code, Copilot, Cursor — whatever you installed it on) and describe what you need. The skill creator activates automatically when you talk about creating skills or automating workflows.
 
+You can provide **anything** as input — the more context, the better the skill:
+
+**Plain English workflow description:**
 ```
 "Every week I pull sales data from our CRM, clean duplicate entries,
 calculate regional totals, and generate a PDF report for leadership."
 ```
 
-The skill creator activates automatically and walks you through its 5-phase pipeline:
+**Documentation or internal wiki links:**
+```
+"Create a skill based on our deployment runbook: https://wiki.internal/deploy-process
+It covers the pre-deploy checklist, canary rollout steps, and rollback procedures."
+```
+
+**Existing code or scripts:**
+```
+"I have this Python script that processes invoices (see scripts/invoice_processor.py).
+Turn it into a reusable skill that anyone on the team can use."
+```
+
+**API documentation:**
+```
+"Here's our internal API docs for the inventory system: https://api.internal/docs
+Create a skill that lets agents query stock levels and generate reorder reports."
+```
+
+**Compliance or process documents:**
+```
+"Attached is our SOX compliance checklist (compliance-checklist.pdf).
+Create a skill that walks through each check and generates an audit trail."
+```
+
+You can combine all of these — paste links, reference files, describe the workflow in your own words. The agent reads everything and processes it through a structured 5-phase pipeline:
 
 ```
-DISCOVERY        → Researches CRM APIs, data cleaning techniques, PDF generation
+DISCOVERY        → Researches the domain, reads your docs/links/code
      |
-DESIGN           → Defines use cases: data pull, dedup, aggregation, report
+DESIGN           → Defines use cases, methods, and output formats
      |
 ARCHITECTURE     → Plans the skill directory structure
      |
@@ -106,18 +135,21 @@ DETECTION        → Crafts activation keywords so the skill triggers reliably
 IMPLEMENTATION   → Generates all code, docs, and installer
 ```
 
-Output: a complete skill directory (e.g., `./sales-report-builder/`) ready to use.
+This isn't "prompt and pray." Each phase builds on the previous one, and the agent confirms direction with you along the way. The output is a complete skill directory (e.g., `./sales-report-builder/`) with functional code, documentation, and a spec-compliant SKILL.md.
 
-### Step 3: Validate and Scan
+### Step 3: Automated Quality Gates
 
-Before sharing, verify the skill meets the open standard and has no security issues:
+Every skill the pipeline produces goes through two automated checks before it's considered ready:
 
 ```bash
+# Spec compliance — structure, naming, frontmatter, file references
 python3 scripts/validate.py ./sales-report-builder/
+
+# Security — no hardcoded keys, no credential exposure, no injection risks
 python3 scripts/security_scan.py ./sales-report-builder/
 ```
 
-Both checks run automatically during publishing (Step 4), but you can run them manually anytime.
+These run automatically at the end of Phase 5 (Implementation) and again when you publish to the registry. If validation fails or the security scan finds high-severity issues, the skill is blocked until the issues are fixed. You don't have to review the output manually to trust it — the toolchain does that for you.
 
 ### Step 4: Publish to the Team Registry
 
