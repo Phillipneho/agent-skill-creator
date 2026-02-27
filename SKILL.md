@@ -290,6 +290,80 @@ The goal: the user who created the skill sends a one-liner to their colleague on
 
 **If the user says no**, that's fine — the skill is already installed locally and working. They can always share later.
 
+### Set Up a Team Skill Registry (Consultant / Org Rollout)
+
+When a user is setting up skills for a team or organization — not just sharing a single skill — offer to create a **centralized skill registry**. This is the infrastructure that lets the organization accumulate and discover skills over time.
+
+```
+It looks like you're building skills for a team. Want me to set up a
+shared skill registry? This gives your organization a single place to
+publish, browse, and install all skills — like an internal app store.
+```
+
+**If the user says yes, do all of this automatically:**
+
+1. **Initialize the registry**:
+   ```bash
+   mkdir -p /path/to/team-skills-registry
+   python3 scripts/skill_registry.py init --registry /path/to/team-skills-registry --name "Company Name Skills"
+   ```
+
+   Use a sensible path — suggest the user's preferred location, or default to `~/team-skills-registry`.
+
+2. **Create a remote repo for the registry** (same GitHub/GitLab detection as skill sharing):
+   ```bash
+   cd /path/to/team-skills-registry
+   git init && git add -A && git commit -m "feat: Initialize team skill registry"
+
+   # GitHub
+   gh repo create team-skills-registry --private --source=. --push
+   gh repo edit --add-topic agent-skill-registry
+
+   # Or GitLab
+   glab repo create team-skills-registry --private --defaultBranch main
+   git remote add origin <url> && git push -u origin main
+   ```
+
+   Note: the registry repo should be **private** by default (it's an internal catalog).
+
+3. **Publish the just-created skill to the registry**:
+   ```bash
+   python3 scripts/skill_registry.py publish ./sales-report-skill/ --registry /path/to/team-skills-registry --tags sales,reports
+   ```
+
+4. **Show the team how to use it**:
+   ```
+   Registry set up! Here's what your team needs to know:
+
+   Clone the registry (one time):
+     git clone <registry-repo-url> ~/team-skills-registry
+
+   Browse available skills:
+     python3 scripts/skill_registry.py list --registry ~/team-skills-registry
+
+   Search for skills:
+     python3 scripts/skill_registry.py search "sales" --registry ~/team-skills-registry
+
+   Install a skill (auto-detects platform — VS Code Copilot, Cursor, etc.):
+     python3 scripts/skill_registry.py install sales-report-skill --registry ~/team-skills-registry
+
+   Publish a new skill:
+     python3 scripts/skill_registry.py publish ./my-new-skill/ --registry ~/team-skills-registry --tags tag1,tag2
+   ```
+
+**When to offer registry setup:**
+- User mentions "team", "organization", "department", "colleagues", "company"
+- User creates multiple skills in one session
+- User asks about sharing or distributing skills at scale
+- User is clearly an AI consultant or admin setting up infrastructure
+
+**When NOT to offer registry setup:**
+- User is creating a single personal skill
+- User already shared via the one-liner git clone flow and is satisfied
+- A registry already exists (check for `registry/registry.json` or `~/team-skills-registry`)
+
+The registry is a git repo. It gets version history, access control (repo permissions), and review workflows (PRs) for free. No servers, no databases, no new tools to learn.
+
 See `references/pipeline-phases.md` for detailed Phase 5 instructions.
 
 ### Generated SKILL.md Format

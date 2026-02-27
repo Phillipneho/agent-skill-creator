@@ -140,16 +140,18 @@ No registry commands, no publishing steps, no terminal knowledge beyond paste. T
 Each team member creates skills from their own domain and shares them. Over months the organization accumulates a library of reusable skills:
 
 - Sales team shares `/sales-report-skill`
-- Engineering shares `/deploy-checklist`
-- Legal shares `/quarterly-compliance`
-- Data science shares `/customer-churn-model`
-- SRE shares `/incident-runbook`
+- Engineering shares `/deploy-checklist-skill`
+- Legal shares `/quarterly-compliance-skill`
+- Data science shares `/customer-churn-skill`
+- SRE shares `/incident-runbook-skill`
 
 Any colleague installs any skill with one `git clone`. Any agent on any platform can invoke it. Knowledge compounds instead of evaporating.
 
-### For power users: the registry CLI
+### For teams and consultants: the skill registry
 
-If your organization prefers a centralized catalog (browsable, searchable, versioned), the registry tooling is available:
+When your organization has more than a few skills, the agent offers to set up a **team skill registry** — a single repo where all skills are published, browsable, and installable. Think of it as an internal app store for agent skills.
+
+The agent sets it up automatically when it detects you're building for a team. Or you can set it up manually:
 
 ```bash
 python3 scripts/skill_registry.py init --name "Acme Corp Skills"
@@ -159,7 +161,9 @@ python3 scripts/skill_registry.py search "sales"
 python3 scripts/skill_registry.py install sales-report-skill
 ```
 
-This is optional. Most teams start by sharing `git clone` links and add the registry when the skill count grows.
+The registry is a git repo. Clone it once, and every team member can browse and install any skill. No servers, no databases — just git.
+
+**For AI consultants:** Install agent-skill-creator, create skills from your client's workflows, set up the registry, and hand over a self-sustaining system. After you leave, the team keeps creating and sharing skills on their own.
 
 ---
 
