@@ -10,12 +10,12 @@
 
 ## What Is This?
 
-Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Install it once, then talk to your agent naturally. Pass in workflow descriptions, documentation, links, existing code, API docs, compliance checklists — whatever you have. The skill creator processes all of it through a structured 5-phase pipeline and produces a complete, validated, security-scanned skill ready for your team to use.
+Agent Skill Creator is a **Level 5 skill dark factory**. Install it once, then type `/agent-skill-creator` followed by whatever you have — workflow descriptions, documentation, links, existing code, API docs, compliance checklists, PDFs. The agent deeply reads and understands your material, generates its own internal specification, implements the skill end-to-end from that specification, validates it, security-scans it, and delivers a production-ready skill. You provide the raw material and evaluate the outcome. The agent handles everything in between.
 
-Once installed, type `/agent-skill-creator` followed by whatever you have — a workflow description, a link, existing code, a PDF. The agent builds the skill; the toolchain verifies it.
+Inspired by the [dark factory model](https://www.youtube.com/watch?v=bDcgHzCBgmQ) where specifications go in and working software comes out: the human removes the cognitive constraint by providing domain knowledge, the factory removes the implementation constraint by building autonomously, and the quality gates remove the trust constraint by validating automatically.
 
-**Input**: Documentation, links, code, process descriptions — anything that captures the workflow.
-**Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md — published to a shared catalog your team can browse and install from.
+**Input**: Raw material — documentation, links, code, process descriptions, PDFs, anything that captures the workflow.
+**Output**: A self-contained, validated, security-scanned skill directory ready to install on any platform and publish to the team registry.
 
 ### Built-in Quality Gates
 
@@ -61,9 +61,11 @@ The pattern is always the same: **capture tacit knowledge as skills, share them 
 
 **Why you can trust the output:**
 
-The agent-skill-creator doesn't just generate code and hope for the best. Every skill it produces goes through automated validation (spec compliance) and security scanning (credential detection, injection patterns) before it's ready. When you publish to the registry, both checks run again as a gate — skills that fail cannot be published. This means the skills your team installs are structurally sound, security-reviewed, and follow a consistent standard. You describe the workflow; the toolchain handles the quality assurance.
+This is a Level 5 dark factory — not "prompt and pray." The agent reads your material, generates its own internal specification, implements from that specification, and then runs automated quality gates before anything is delivered. Validation checks spec compliance (structure, naming, frontmatter). Security scanning checks for hardcoded credentials and injection patterns. Skills that fail these gates cannot be published to the registry.
 
-This repo is the complete toolkit: create skills from natural language, validate them against the open standard, security-scan them, and share them through a git-based registry that gives you version history, access control, and review workflows for free.
+The human provides the domain knowledge (the hard part). The factory builds the skill (the tedious part). The quality gates verify the output (the trust part). Three constraints removed: cognitive, implementation, and trust.
+
+This repo is the complete toolkit: create skills from raw material, validate them against the open standard, security-scan them, and share them through a git-based registry that gives you version history, access control, and review workflows for free.
 
 ---
 
@@ -111,21 +113,20 @@ Create a skill that queries stock levels and generates reorder reports.
 /agent-skill-creator Based on compliance-checklist.pdf, create a SOX audit skill
 ```
 
-You can pass in plain English descriptions, documentation links, existing code, API docs, PDFs — anything. Combine multiple sources in one message. The agent reads everything and processes it through a structured 5-phase pipeline:
+You can pass in plain English descriptions, documentation links, existing code, API docs, PDFs — anything. Combine multiple sources in one message. The agent reads everything and runs the dark factory pipeline:
 
 ```
-DISCOVERY        → Researches the domain, reads your docs/links/code
-     |
-DESIGN           → Defines use cases, methods, and output formats
-     |
-ARCHITECTURE     → Plans the skill directory structure
-     |
-DETECTION        → Crafts activation keywords so the skill triggers reliably
-     |
-IMPLEMENTATION   → Generates all code, docs, and installer
+STAGE 1: UNDERSTAND AND SPECIFY
+  DISCOVERY        → Reads all your material, researches APIs, data sources
+  DESIGN           → Generates its own internal specification (use cases, methods, edge cases)
+
+STAGE 2: BUILD AND VERIFY
+  ARCHITECTURE     → Structures the skill directory
+  DETECTION        → Crafts activation keywords so the skill triggers reliably
+  IMPLEMENTATION   → Creates all files, validates, security-scans, delivers
 ```
 
-This isn't "prompt and pray." Each phase builds on the previous one, and the agent confirms direction with you along the way. The output is a complete skill directory (e.g., `./sales-report-builder/`) with functional code, documentation, and a spec-compliant SKILL.md.
+The agent deeply understands your material before writing a single line of code. It generates its own specification — a complete internal contract for what the skill must do — and then implements from that specification autonomously. The output is a complete skill directory (e.g., `./sales-report-builder/`) with functional code, documentation, and a spec-compliant SKILL.md.
 
 ### Step 3: Automated Quality Gates
 
@@ -282,18 +283,12 @@ Export this skill for Cursor
 
 ### What Happens
 
-The creator runs a **5-phase autonomous pipeline**:
+The dark factory reads your material, generates its own spec, builds the skill, and verifies it:
 
 ```
-Phase 1: DISCOVERY        Research APIs, data sources, and domain knowledge
-          |
-Phase 2: DESIGN           Define use cases, methodologies, and outputs
-          |
-Phase 3: ARCHITECTURE     Structure skill directory (simple vs. complex suite)
-          |
-Phase 4: DETECTION        Generate description + keywords for reliable activation
-          |
-Phase 5: IMPLEMENTATION   Create all files, run validation, run security scan
+UNDERSTAND:  Read all material, research domain, generate internal specification
+BUILD:       Structure directory, write all code and docs, craft activation keywords
+VERIFY:      Run spec validation + security scan — block delivery if either fails
 ```
 
 Output: a complete skill directory you can install on any supported platform.

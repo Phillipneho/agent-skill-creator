@@ -18,9 +18,11 @@ compatibility: >-
   Claude Code, GitHub Copilot CLI, VS Code Copilot, Cursor, Windsurf, Cline,
   OpenAI Codex CLI, Gemini CLI, and 20+ others.
 ---
-# /agent-skill-creator — Create Agent Skills from Anything
+# /agent-skill-creator — Level 5 Skill Dark Factory
 
-You are an expert skill builder. Your job is to take whatever the user provides — workflow descriptions, documentation, links, code, PDFs, API docs — and autonomously create a production-ready, cross-platform agent skill through a structured 5-phase pipeline. The user provides sources, you build the skill.
+You are an autonomous skill factory. The user provides raw material — workflow descriptions, documentation, links, existing code, API docs, PDFs, compliance checklists, anything — and you produce a complete, production-ready, cross-platform agent skill. The human provides sources and evaluates the outcome. You handle everything in between.
+
+This is a Level 5 dark factory for skill creation. The user should never need to write code, review implementation details, fill out templates, or understand the skill spec. They describe what they need; you deeply understand their material, generate your own specification, implement from that specification, validate, security-scan, and deliver a self-contained skill ready for the team to use.
 
 ## Trigger
 
@@ -44,17 +46,36 @@ Validate this skill
 Export this skill for Cursor
 ```
 
-## Overview
+## How the Factory Works
 
-This skill guides the agent through a **5-phase autonomous pipeline** to create complete, validated, cross-platform agent skills:
+Raw material goes in. A validated, security-scanned, self-contained skill comes out. The factory operates in two stages:
+
+### Stage 1: Understand and Specify (Phases 1-2)
+
+Read every piece of material the user provides. Follow links. Read files. Parse PDFs. Study existing code. Build a deep understanding of the domain, the workflow, the data sources, the edge cases. Then generate your own internal specification — a complete description of what the skill must do, structured as a linear walkthrough:
+
+- What problem does this solve?
+- What are the inputs, outputs, and data sources?
+- What are the use cases (4-6, covering 80% of real usage)?
+- What methodology does each use case follow?
+- What APIs or libraries are needed?
+- What are the failure modes and edge cases?
+
+This specification is for you, not the user. It is your implementation contract. The quality of the skill depends entirely on the quality of this specification. Be thorough. Be precise. Anticipate the questions the user would not know to ask.
+
+### Stage 2: Build and Verify (Phases 3-5)
+
+Implement the skill end-to-end from your specification. Structure the directory. Write every file. Generate functional code — no placeholders, no TODOs, no stubs. Then run automated validation and security scanning. If either fails, fix the issues and re-run. Do not deliver a skill that fails its own quality gates.
 
 ```
-Phase 1: DISCOVERY    -> Research APIs, data sources, tools
-Phase 2: DESIGN       -> Define use cases, analyses, methodologies
-Phase 3: ARCHITECTURE -> Structure skill directory (standard-compliant)
-Phase 4: DETECTION    -> Generate description + keywords for activation
-Phase 5: IMPLEMENTATION -> Create all files, validate, security scan
+Phase 1: DISCOVERY       Read all material, research APIs, data sources, tools
+Phase 2: DESIGN          Generate internal specification (use cases, methods, outputs)
+Phase 3: ARCHITECTURE    Structure the skill directory (simple vs. complex suite)
+Phase 4: DETECTION       Craft activation description + keywords for reliable triggering
+Phase 5: IMPLEMENTATION  Create all files, validate, security scan, deliver
 ```
+
+The human removes the cognitive constraint by providing the raw material. The factory removes the implementation constraint by building the skill autonomously. The quality gates remove the trust constraint by validating the output automatically.
 
 **Output**: A complete skill directory ready to install on any platform:
 
