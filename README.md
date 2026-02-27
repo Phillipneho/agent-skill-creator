@@ -205,7 +205,9 @@ git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/
 
 ### IDEs — global install (available in all projects)
 
-IDE platforms like VS Code Copilot and Cursor load skills per-project. To make a skill available globally without cloning into every project, **clone once and symlink**:
+Claude Code is the only platform with a native global skills directory (`~/.claude/skills/`). VS Code Copilot, Cursor, and Windsurf only support global rules as markdown text — they don't support full skill directories with scripts and references at the global level.
+
+**The workaround: clone once, symlink per project.**
 
 ```bash
 # 1. Clone once to a central location
@@ -223,14 +225,14 @@ mkdir -p .cursor/rules && ln -s ~/agent-skills/agent-skill-creator .cursor/rules
 mkdir -p .windsurf/skills && ln -s ~/agent-skills/agent-skill-creator .windsurf/skills/agent-skill-creator
 ```
 
-To automate this for every project, add an alias to your shell profile (`~/.bashrc` or `~/.zshrc`):
+To automate this, add a one-word alias to your shell profile (`~/.bashrc` or `~/.zshrc`):
 
 ```bash
 # Add to ~/.zshrc or ~/.bashrc (pick your platform):
 alias install-skills='mkdir -p .github/skills && ln -s ~/agent-skills/agent-skill-creator .github/skills/agent-skill-creator'
 ```
 
-Then in any project, run `install-skills` once. Updates propagate automatically — `cd ~/agent-skills/agent-skill-creator && git pull` updates every project at once.
+Then in any project: `install-skills`. One word, done. Updates propagate automatically — `cd ~/agent-skills/agent-skill-creator && git pull` updates every project at once since they all point to the same clone.
 
 ### CLI Tools
 
