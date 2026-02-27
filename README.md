@@ -70,9 +70,9 @@ Skill installed successfully.
 
 To use it, open a new session and type:
 
-  /sales-report-builder Generate the weekly report for the West region
+  /sales-report-skill Generate the weekly report for the West region
 
-Installed at: ~/.claude/skills/sales-report-builder
+Installed at: ~/.claude/skills/sales-report-skill
 ```
 
 The agent detects your platform (Claude Code, Cursor, Copilot, etc.), installs the skill to the right location, and tells you exactly how to invoke it. No manual steps.
@@ -80,8 +80,8 @@ The agent detects your platform (Claude Code, Cursor, Copilot, etc.), installs t
 The generated skill directory looks like this:
 
 ```
-sales-report-builder/
-├── SKILL.md          # Skill definition (activates with /sales-report-builder)
+sales-report-skill/
+├── SKILL.md          # Skill definition (activates with /sales-report-skill)
 ├── scripts/          # Functional Python code
 ├── references/       # Detailed documentation
 ├── assets/           # Templates, configs
@@ -89,7 +89,7 @@ sales-report-builder/
 └── README.md         # Installation instructions (for sharing with others)
 ```
 
-Your team installs it the same way they installed agent-skill-creator — one `git clone` — and invokes it with `/sales-report-builder`. The included `install.sh` auto-detects their platform too.
+Your team installs it the same way they installed agent-skill-creator — one `git clone` — and invokes it with `/sales-report-skill`. The included `install.sh` auto-detects their platform too.
 
 ---
 
@@ -111,41 +111,55 @@ Every skill is automatically validated (correct structure, naming, metadata) and
 
 ## Share Skills Across Your Team
 
-Once a skill is created, publish it so everyone can use it.
+After the agent builds and installs your skill, it asks:
 
-### Publish
-
-```bash
-python3 scripts/skill_registry.py publish ./sales-report-builder/ --tags sales,reports,crm
-git add registry/ && git commit -m "Add sales-report-builder skill" && git push
+```
+Want to share this skill with your team so they can install it too?
 ```
 
-### Discover
+Say yes. The agent detects whether your team uses GitHub or GitLab, creates a repo, pushes the skill, and gives you a one-liner to share:
 
-```bash
-git pull
-python3 scripts/skill_registry.py list
+```
+Shared! Your colleagues can install it by pasting this in their terminal:
 
-# NAME                    VERSION  AUTHOR        TAGS
-# sales-report-builder    1.2.0    sales-team    sales, reports, crm
-# deploy-checklist        2.1.0    engineering   deploy, ci, checklist
-# quarterly-compliance    1.0.0    legal-team    compliance, audit
-
-python3 scripts/skill_registry.py search "sales"
-python3 scripts/skill_registry.py info sales-report-builder
+  git clone https://github.com/your-org/sales-report-skill.git ~/.claude/skills/sales-report-skill
 ```
 
-### Install
+or for GitLab teams:
 
-```bash
-python3 scripts/skill_registry.py install sales-report-builder
+```
+  git clone https://gitlab.com/your-org/sales-report-skill.git ~/.claude/skills/sales-report-skill
 ```
 
-Auto-detects your platform (Claude Code, Cursor, etc.) and installs to the right location.
+Send that line to your colleague on Slack or Teams. They paste it. Done. They can now type `/sales-report-skill` in their agent.
+
+No registry commands, no publishing steps, no terminal knowledge beyond paste. The agent handles the repo creation, the push, and generates install commands for every platform. Works with GitHub, GitLab, GitHub Enterprise, and self-hosted GitLab instances.
 
 ### The result over time
 
-Each team contributes skills from their domain. Operations teams capture runbooks. Data teams capture analysis pipelines. Finance teams capture reporting workflows. Engineering teams capture deployment processes. The organization builds a living library of operational knowledge that every agent can access.
+Each team member creates skills from their own domain and shares them. Over months the organization accumulates a library of reusable skills:
+
+- Sales team shares `/sales-report-skill`
+- Engineering shares `/deploy-checklist`
+- Legal shares `/quarterly-compliance`
+- Data science shares `/customer-churn-model`
+- SRE shares `/incident-runbook`
+
+Any colleague installs any skill with one `git clone`. Any agent on any platform can invoke it. Knowledge compounds instead of evaporating.
+
+### For power users: the registry CLI
+
+If your organization prefers a centralized catalog (browsable, searchable, versioned), the registry tooling is available:
+
+```bash
+python3 scripts/skill_registry.py init --name "Acme Corp Skills"
+python3 scripts/skill_registry.py publish ./sales-report-skill/ --tags sales,reports
+python3 scripts/skill_registry.py list
+python3 scripts/skill_registry.py search "sales"
+python3 scripts/skill_registry.py install sales-report-skill
+```
+
+This is optional. Most teams start by sharing `git clone` links and add the registry when the skill count grows.
 
 ---
 
@@ -261,7 +275,7 @@ All commands use exit code `0` for success, `1` for errors. All support `--json`
 
 **Skill not activating**: Check that the SKILL.md `description` field contains keywords matching your query. The description is how the agent decides when to activate the skill.
 
-**Validation fails on name**: Names must be lowercase, use hyphens between words, 1-64 characters. Examples: `sales-report-builder`, `deploy-checklist`.
+**Validation fails on name**: Names must be lowercase, use hyphens between words, 1-64 characters. Examples: `sales-report-skill`, `deploy-checklist`.
 
 **SKILL.md too long**: Move detailed content to `references/` files and link from the main SKILL.md.
 

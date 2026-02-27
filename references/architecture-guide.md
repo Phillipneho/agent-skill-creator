@@ -216,36 +216,30 @@ All skill and suite names follow standard kebab-case per the Agent Skills Open S
 | Consecutive hyphens | Not allowed (`my--skill` is invalid) |
 | Directory match | The `name` field in SKILL.md frontmatter must exactly match the parent directory name |
 
-### 4.2 The -cskill Suffix Is Deprecated
+### 4.2 The -skill Suffix
 
-The `-cskill` suffix convention from earlier versions is **removed** as of v4.0. Do not append `-cskill` to any generated skill name.
+Every generated skill name **must end with `-skill`**. This suffix makes skills instantly discoverable across GitHub and GitLab organizations — teams can search `*-skill` and find every skill in their org.
 
-| Old (deprecated) | New (standard) |
-|-------------------|----------------|
-| `article-to-prototype-cskill` | `article-to-prototype` |
-| `stock-analyzer-cskill` | `stock-analyzer` |
-| `csv-data-cleaner-cskill` | `csv-data-cleaner` |
+**Suites** use the `-suite` suffix instead (e.g., `financial-suite`). Suites contain skills but are not themselves invoked as skills.
 
-If a user requests the `-cskill` suffix, inform them it is deprecated and generate the skill without it.
+The previous `-cskill` suffix convention is **deprecated**. If encountered, replace with `-skill`.
 
 ### 4.3 Naming Pattern
 
-Use the format `domain-objective` or `domain-objective-type`:
-
 ```
-{domain}-{objective}[-{qualifier}]
+{domain}-{objective}-skill
 ```
 
 **Examples:**
-- `stock-analyzer` -- domain: stock, objective: analyzer
-- `csv-data-cleaner` -- domain: csv-data, objective: cleaner
-- `nass-usda-agriculture` -- domain: nass-usda, objective: agriculture
-- `noaa-climate-analysis` -- domain: noaa-climate, objective: analysis
-- `financial-analysis-suite` -- complex suite covering financial analysis
+- `stock-analyzer-skill` -- domain: stock, objective: analyzer
+- `csv-data-cleaner-skill` -- domain: csv-data, objective: cleaner
+- `sales-report-skill` -- domain: sales, objective: report
+- `deploy-checklist-skill` -- domain: deploy, objective: checklist
+- `financial-suite` -- complex suite (uses `-suite`, not `-skill`)
 
 **Guidelines:**
-- Be descriptive but concise
-- Prefer shorter names when possible (aim for under 30 characters)
+- Must end with `-skill` (or `-suite` for multi-skill suites)
+- Be descriptive but concise — aim for under 30 characters
 - Include the primary domain for discoverability
 - Avoid generic names like `my-skill` or `tool-1`
 
@@ -269,7 +263,9 @@ def validate_skill_name(name: str) -> tuple[bool, list[str]]:
     if '--' in name:
         errors.append("Consecutive hyphens not allowed")
     if name.endswith('-cskill'):
-        errors.append("The -cskill suffix is deprecated; remove it")
+        errors.append("The -cskill suffix is deprecated; use -skill instead")
+    if not name.endswith('-skill') and not name.endswith('-suite'):
+        errors.append("Name must end with '-skill' (or '-suite' for multi-skill suites)")
     return (len(errors) == 0, errors)
 ```
 

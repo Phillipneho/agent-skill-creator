@@ -305,7 +305,22 @@ def validate_skill(skill_path: str) -> dict:
                 f"(found {len(description_value)})"
             )
 
+    # --- Check: -cskill suffix is deprecated ---
+    if name_value is not None and name_value.endswith("-cskill"):
+        errors.append(
+            f"'name' uses the deprecated '-cskill' suffix. "
+            f"Use '-skill' instead (found: '{name_value}')"
+        )
+
     # --- Warnings ---
+
+    # Naming convention: -skill suffix (or -suite for suites)
+    if name_value is not None and len(name_value) > 0:
+        if not name_value.endswith("-skill") and not name_value.endswith("-suite"):
+            warnings.append(
+                f"'name' should end with '-skill' for discoverability "
+                f"(found: '{name_value}')"
+            )
 
     # Body line count
     if body is not None:
