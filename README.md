@@ -672,28 +672,6 @@ Each phase is documented in `references/phase{1..5}-*.md`.
 
 ---
 
-## Migration from v3.x
-
-Key changes in v4.0:
-
-- `-cskill` suffix removed from skill names (use standard kebab-case)
-- SKILL.md body limited to 500 lines (move detail to `references/`)
-- `install.sh` cross-platform installer added
-- Spec validation and security scanning tools added
-- `marketplace.json` simplified (optional for simple skills)
-
-Quick migration:
-
-```bash
-mv my-skill-cskill/ my-skill/
-# Update SKILL.md name field to remove -cskill suffix
-python3 scripts/validate.py ./my-skill/
-```
-
-For the complete migration guide, see [MIGRATION.md](MIGRATION.md).
-
----
-
 ## Troubleshooting
 
 **Skill not activating**: Ensure SKILL.md `description` field contains the trigger phrases you expect. The description is the primary activation mechanism.
@@ -714,46 +692,35 @@ For the complete migration guide, see [MIGRATION.md](MIGRATION.md).
 
 ```
 agent-skill-creator/
-  SKILL.md                      # Meta-skill definition
+  SKILL.md                      # Meta-skill definition (the product)
   README.md                     # This file
-  MIGRATION.md                  # v3.x to v4.0 migration guide
   scripts/
     validate.py                 # Spec compliance validator
     security_scan.py            # Security scanner
     export_utils.py             # Cross-platform export tool
-    skill_registry.py           # Git-based shared skill registry
+    skill_registry.py           # Shared skill registry CLI
     install-template.sh         # Template for generated install.sh
   references/
-    pipeline-phases.md          # Full 5-phase pipeline docs
+    pipeline-phases.md          # Full 5-phase pipeline instructions
     architecture-guide.md       # Simple skill vs. complex suite
     cross-platform-guide.md     # Platform-specific details
     export-guide.md             # Export system documentation
+    quality-standards.md        # Quality and code standards
+    templates-guide.md          # Template system guide
+    interactive-mode.md         # Interactive wizard docs
+    multi-agent-guide.md        # Suite creation docs
+    agentdb-integration.md      # Optional learning system
     phase1-discovery.md         # Phase 1 deep dive
     phase2-design.md            # Phase 2 deep dive
     phase3-architecture.md      # Phase 3 deep dive
     phase4-detection.md         # Phase 4 deep dive
     phase5-implementation.md    # Phase 5 deep dive
-    phase6-testing.md           # Testing guide
-    quality-standards.md        # Quality standards reference
-    templates-guide.md          # Template system guide
     templates/                  # Skill templates
-    tools/                      # Validation and scanning tools
-    examples/                   # Example configurations
-  registry/                      # Shared skill catalog (git-tracked)
+    examples/stock-analyzer/    # Example skill
+  registry/                     # Shared skill catalog (git-tracked)
     registry.json               # Skill manifest
     skills/                     # Published skill directories
-  integrations/
-    agentdb_bridge.py           # AgentDB integration bridge
-    fallback_system.py          # Graceful degradation system
-    learning_feedback.py        # Learning loop integration
-    validation_system.py        # Integration validation
-  article-to-prototype/         # Example generated skill
   exports/                      # Export output directory
-  docs/
-    CHANGELOG.md                # Version history
-    NAMING_CONVENTIONS.md       # Naming rules reference
-    PIPELINE_ARCHITECTURE.md    # Pipeline internals
-    DECISION_LOGIC.md           # Architecture decision logic
 ```
 
 ---
@@ -778,10 +745,7 @@ MIT License.
 ## Links
 
 - [Agent Skills Open Standard](https://github.com/anthropics/agent-skills-spec)
-- [Migration Guide (v3.x to v4.0)](MIGRATION.md)
-- [Changelog](docs/CHANGELOG.md)
 - [Architecture Guide](references/architecture-guide.md)
 - [Pipeline Phases Reference](references/pipeline-phases.md)
 - [Cross-Platform Guide](references/cross-platform-guide.md)
 - [Export Guide](references/export-guide.md)
-- [Activation Best Practices](references/ACTIVATION_BEST_PRACTICES.md)
