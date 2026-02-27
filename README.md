@@ -25,15 +25,17 @@ Every AI agent (Claude Code, GitHub Copilot, Cursor, Windsurf, Codex, Gemini) st
 ### 1. Install (one command)
 
 ```bash
-# Claude Code
+# Claude Code (global — works in all projects)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
-# VS Code with GitHub Copilot
+# VS Code with GitHub Copilot (per-project)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
 
-# Cursor
+# Cursor (per-project)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
 ```
+
+IDE users: the per-project commands above work in one project. For global availability across all projects, see [global install](#ides--global-install-available-in-all-projects).
 
 Other platforms: [see full list below](#all-platforms).
 
@@ -183,7 +185,9 @@ The registry is a git repo on GitHub or GitLab. Clone it once, and every team me
 
 Works in IDEs and CLI tools. Same install, same invocation, same results.
 
-### IDEs
+### IDEs (per-project)
+
+These platforms load skills from a directory inside each project:
 
 ```bash
 # VS Code with GitHub Copilot
@@ -199,10 +203,39 @@ git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/sk
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/agent-skill-creator
 ```
 
+### IDEs — global install (available in all projects)
+
+IDE platforms like VS Code Copilot and Cursor load skills per-project. To make a skill available globally without cloning into every project, **clone once and symlink**:
+
+```bash
+# 1. Clone once to a central location
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/agent-skills/agent-skill-creator
+
+# 2. In any project, create a symlink (pick your platform):
+
+# VS Code with GitHub Copilot
+mkdir -p .github/skills && ln -s ~/agent-skills/agent-skill-creator .github/skills/agent-skill-creator
+
+# Cursor
+mkdir -p .cursor/rules && ln -s ~/agent-skills/agent-skill-creator .cursor/rules/agent-skill-creator
+
+# Windsurf
+mkdir -p .windsurf/skills && ln -s ~/agent-skills/agent-skill-creator .windsurf/skills/agent-skill-creator
+```
+
+To automate this for every project, add an alias to your shell profile (`~/.bashrc` or `~/.zshrc`):
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc (pick your platform):
+alias install-skills='mkdir -p .github/skills && ln -s ~/agent-skills/agent-skill-creator .github/skills/agent-skill-creator'
+```
+
+Then in any project, run `install-skills` once. Updates propagate automatically — `cd ~/agent-skills/agent-skill-creator && git pull` updates every project at once.
+
 ### CLI Tools
 
 ```bash
-# Claude Code (personal — available in all projects)
+# Claude Code (global — available in all projects)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
 # Claude Code (per-project)
