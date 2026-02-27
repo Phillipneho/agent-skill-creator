@@ -28,14 +28,14 @@ Every AI agent (Claude Code, GitHub Copilot, Cursor, Windsurf, Codex, Gemini) st
 # Claude Code (global — works in all projects)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
-# VS Code with GitHub Copilot (per-project)
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+# VS Code with GitHub Copilot (global — works in all projects, requires VS Code 1.108+)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
 # Cursor (per-project)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
 ```
 
-IDE users: the per-project commands above work in one project. For global availability across all projects, see [global install](#ides--global-install-available-in-all-projects).
+Claude Code and VS Code Copilot share the same global path (`~/.claude/skills/`) — one install works for both. Cursor requires per-project install; see [global workaround](#cursor--global-install).
 
 Other platforms: [see full list below](#all-platforms).
 
@@ -185,16 +185,27 @@ The registry is a git repo on GitHub or GitLab. Clone it once, and every team me
 
 Works in IDEs and CLI tools. Same install, same invocation, same results.
 
-### IDEs (per-project)
+### Global install (available in all projects)
 
-These platforms load skills from a directory inside each project:
+These platforms support a global user-level skills directory. Install once, use in every project:
 
 ```bash
-# VS Code with GitHub Copilot
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+# Claude Code + VS Code Copilot (same path works for both)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
-# Cursor
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
+# Also works via the Copilot-specific global path
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.copilot/skills/agent-skill-creator
+```
+
+VS Code Copilot (1.108+, December 2025) adopted the [Agent Skills Open Standard](https://code.visualstudio.com/docs/copilot/customization/agent-skills) and searches `~/.claude/skills/` and `~/.copilot/skills/` by default. One install at `~/.claude/skills/` makes a skill globally available on both Claude Code and VS Code Copilot.
+
+### Per-project install
+
+For platforms without a global skills directory, or if you prefer per-project installation:
+
+```bash
+# VS Code with GitHub Copilot (per-project alternative)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
 
 # Windsurf
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/skills/agent-skill-creator
@@ -203,36 +214,25 @@ git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/sk
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/agent-skill-creator
 ```
 
-### IDEs — global install (available in all projects)
+### Cursor — global install
 
-Claude Code is the only platform with a native global skills directory (`~/.claude/skills/`). VS Code Copilot, Cursor, and Windsurf only support global rules as markdown text — they don't support full skill directories with scripts and references at the global level.
-
-**The workaround: clone once, symlink per project.**
+Cursor does not have a global skills directory. Clone once and symlink per project:
 
 ```bash
-# 1. Clone once to a central location
+# 1. Clone once
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/agent-skills/agent-skill-creator
 
-# 2. In any project, create a symlink (pick your platform):
-
-# VS Code with GitHub Copilot
-mkdir -p .github/skills && ln -s ~/agent-skills/agent-skill-creator .github/skills/agent-skill-creator
-
-# Cursor
+# 2. In any project, symlink
 mkdir -p .cursor/rules && ln -s ~/agent-skills/agent-skill-creator .cursor/rules/agent-skill-creator
-
-# Windsurf
-mkdir -p .windsurf/skills && ln -s ~/agent-skills/agent-skill-creator .windsurf/skills/agent-skill-creator
 ```
 
-To automate this, add a one-word alias to your shell profile (`~/.bashrc` or `~/.zshrc`):
+Add a shell alias to automate this (`~/.zshrc` or `~/.bashrc`):
 
 ```bash
-# Add to ~/.zshrc or ~/.bashrc (pick your platform):
-alias install-skills='mkdir -p .github/skills && ln -s ~/agent-skills/agent-skill-creator .github/skills/agent-skill-creator'
+alias install-skills='mkdir -p .cursor/rules && ln -s ~/agent-skills/agent-skill-creator .cursor/rules/agent-skill-creator'
 ```
 
-Then in any project: `install-skills`. One word, done. Updates propagate automatically — `cd ~/agent-skills/agent-skill-creator && git pull` updates every project at once since they all point to the same clone.
+Then in any project: `install-skills`. Updates propagate automatically via the symlink.
 
 ### CLI Tools
 
@@ -240,11 +240,8 @@ Then in any project: `install-skills`. One word, done. Updates propagate automat
 # Claude Code (global — available in all projects)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
-# Claude Code (per-project)
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .claude/skills/agent-skill-creator
-
 # GitHub Copilot CLI
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.copilot/skills/agent-skill-creator
 
 # OpenAI Codex CLI
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .codex/skills/agent-skill-creator
