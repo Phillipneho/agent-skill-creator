@@ -195,6 +195,157 @@ climate-suite/
 └── README.md
 ```
 
+## Suite Orchestration Patterns
+
+The suite-level SKILL.md is the most important file in a suite. It doesn't just list components — it tells the agent *how to think* about routing, sequencing, and combining them.
+
+### Pattern 1: Intent-Based Routing
+
+The simplest pattern. The suite SKILL.md maps user intent to component skills:
+
+```markdown
+# /ecommerce-suite — E-commerce Intelligence
+
+You coordinate four specialized e-commerce skills. Route every user
+query to the right component based on intent.
+
+## Routing Table
+
+| If the user asks about... | Invoke | Examples |
+|---------------------------|--------|---------|
+| Revenue, orders, sales, conversion, AOV | /sales-monitor | "What were last week's sales?" |
+| Customers, segments, cohorts, churn, retention | /customer-analytics | "Show me customer retention" |
+| Stock, inventory, reorder, supply, out-of-stock | /inventory-tracker | "Which SKUs need reordering?" |
+| Summary, dashboard, executive, weekly report | /executive-reports | "Generate the weekly report" |
+
+If the query doesn't clearly match one component, ask the user to clarify.
+If the query spans multiple components, use the cross-component workflows below.
+```
+
+### Pattern 2: Sequential Pipeline
+
+Some workflows require components in sequence — the output of one feeds the next:
+
+```markdown
+## Cross-Component Workflows
+
+### Weekly Executive Report
+When user asks for "weekly report", "executive summary", or "full store overview":
+
+1. Run /sales-monitor: Get revenue, orders, conversion for the past 7 days
+2. Run /customer-analytics: Get new vs returning customer split, churn rate
+3. Run /inventory-tracker: Get low-stock alerts and reorder recommendations
+4. Run /executive-reports: Compile all three into a single PDF dashboard
+
+The executive-reports component expects data from the other three.
+Pass the outputs as context — do not ask the user to run each step manually.
+
+### Churn Revenue Impact
+When user asks about "revenue impact of churn" or "how much are we losing":
+
+1. Run /customer-analytics: Get churned customer segments and churn rate
+2. Run /sales-monitor: Get revenue breakdown by customer segment
+3. Calculate: revenue_at_risk = churned_segment_revenue × churn_rate
+4. Present combined analysis with both the churn data and revenue impact
+```
+
+### Pattern 3: Parallel Aggregation
+
+When components can run independently and results are combined:
+
+```markdown
+### Store Health Check
+When user asks for "store health" or "how's the business":
+
+Run these in parallel (no dependencies between them):
+- /sales-monitor → revenue trend (up/down/flat)
+- /customer-analytics → retention rate
+- /inventory-tracker → stock health score
+
+Then synthesize:
+- All green: "Store is healthy — revenue trending up, retention stable, stock well-managed"
+- Mixed: Report which areas need attention
+- All concerning: "Multiple areas need attention" + specific recommendations
+```
+
+### Pattern 4: Conditional Routing
+
+When the right component depends on data discovered during the conversation:
+
+```markdown
+## Conditional Workflows
+
+### Deep Dive Analysis
+When user asks to "deep dive" or "investigate" a metric:
+
+1. Identify which metric they're asking about
+2. Route to the appropriate component:
+   - Revenue metric → /sales-monitor with detailed=true
+   - Customer metric → /customer-analytics with detailed=true
+   - Stock metric → /inventory-tracker with detailed=true
+3. If the deep dive reveals a cross-domain issue (e.g., revenue dropped
+   because of stockouts), invoke the relevant second component
+4. Present the combined root-cause analysis
+```
+
+### Orchestration Anti-Patterns
+
+| Anti-Pattern | Why It's Wrong | Do This Instead |
+|-------------|---------------|-----------------|
+| Suite SKILL.md just lists components without routing logic | Agent has to guess which component to use | Provide explicit routing table with example queries |
+| Components call each other's scripts directly | Creates tight coupling, breaks independence | Agent orchestrates — passes output from A as context to B |
+| Suite SKILL.md duplicates component instructions | Maintenance nightmare, instructions drift apart | Reference component skills: "Invoke /sales-monitor for this" |
+| No cross-component workflow examples | Agent doesn't know how to combine results | Document 2-3 concrete multi-component workflows |
+| Every query goes through all components | Wastes tokens and time | Route to specific component; only aggregate when explicitly asked |
+
+### Complete Suite SKILL.md Example
+
+```markdown
+# /financial-suite — Comprehensive Financial Analysis
+
+You are a financial analysis coordinator managing three specialized skills.
+Your job is to route queries to the right specialist and combine results
+when needed.
+
+## Component Skills
+
+- **/stock-analyzer**: Real-time and historical price data, technical indicators
+- **/portfolio-tracker**: Holdings, allocation, performance, rebalancing
+- **/market-research**: Sector analysis, news sentiment, peer comparison
+
+## Routing Logic
+
+| User Intent | Route To |
+|-------------|----------|
+| Price, chart, technical indicator, RSI, MACD | /stock-analyzer |
+| My portfolio, allocation, performance, rebalance | /portfolio-tracker |
+| Sector trends, news, competitor, peer comparison | /market-research |
+
+## Cross-Skill Workflows
+
+### Portfolio Review with Market Context
+When user asks for "portfolio review" or "how am I doing":
+1. Invoke /portfolio-tracker for current holdings and performance
+2. Invoke /market-research for sector trends affecting held positions
+3. Synthesize: performance attribution + market context + recommendations
+
+### Buy/Sell Analysis
+When user asks "should I buy X" or "should I sell X":
+1. Invoke /stock-analyzer for technical analysis of the specific stock
+2. Invoke /market-research for sector sentiment and peer comparison
+3. Invoke /portfolio-tracker to check current exposure and allocation impact
+4. Synthesize: technical signal + market context + portfolio fit
+
+## When to Combine vs. Route Directly
+
+- Single-domain question → Route to one component
+- "How am I doing" or "full analysis" → Combine all components
+- If unsure → Ask the user: "Would you like a quick check on [X]
+  or a comprehensive analysis across your portfolio?"
+```
+
+---
+
 ## Benefits of Suite Creation
 
 ### Time Efficiency

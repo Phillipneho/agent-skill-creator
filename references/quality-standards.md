@@ -807,6 +807,232 @@ def analyze_yoy(
 
 ---
 
+## Dependency Management
+
+### Decision Framework
+
+Skills should minimize external dependencies. Every dependency is a maintenance burden, a security surface, and a compatibility risk. Use this decision tree:
+
+```
+Can stdlib do it?
+  → Yes: Use stdlib. Done.
+  → No: Is there a lightweight pure-Python package (<1MB)?
+      → Yes: Use it. Add to requirements.txt.
+      → No: Is there a well-maintained popular package?
+          → Yes: Use it only if the domain requires it.
+          → No: Implement it yourself or redesign the approach.
+```
+
+### Stdlib vs. Third-Party Decision Table
+
+| Task | Stdlib Solution | When to Use Third-Party |
+|------|----------------|------------------------|
+| HTTP requests | `urllib.request` | Use `requests` when: complex auth, session management, multipart uploads, or retry logic would require 100+ lines of urllib code |
+| JSON handling | `json` | Never — stdlib is sufficient |
+| CSV parsing | `csv` | Use `pandas` only when: statistical analysis, complex transformations, or DataFrame operations are core to the skill |
+| File paths | `pathlib` | Never — stdlib is sufficient |
+| Date/time | `datetime` | Never — stdlib is sufficient |
+| Regex | `re` | Never — stdlib is sufficient |
+| Hashing | `hashlib` | Never — stdlib is sufficient |
+| Caching | File-based (json + pathlib) | Never for skills — the FileCache pattern in architecture-guide.md is sufficient |
+| Data analysis | Manual calculations | Use `pandas`/`numpy` when: skill is primarily analytical (10+ statistical operations, pivots, aggregations) |
+| PDF generation | Not available | Use `reportlab` or `fpdf2` when PDF output is a core requirement |
+| Web scraping | `urllib` + `html.parser` | Use `beautifulsoup4` when parsing complex/malformed HTML |
+| CLI arguments | `argparse` | Never — stdlib is sufficient |
+| YAML parsing | Manual (the `_parse_frontmatter` pattern) | Use `pyyaml` only if skill needs to parse arbitrary YAML files (not just SKILL.md frontmatter) |
+
+### requirements.txt Rules
+
+When third-party packages are needed:
+
+```
+# requirements.txt
+
+# Pin major.minor, allow patch updates
+requests>=2.31,<3.0
+pandas>=2.0,<3.0
+
+# For stdlib-only skills, create an empty requirements.txt with a comment:
+# No external dependencies required — this skill uses Python stdlib only.
+```
+
+**Rules:**
+- Always create `requirements.txt` even if empty (document the stdlib-only decision)
+- Pin major.minor version to avoid breaking changes
+- Never pin exact patch versions (allows security updates)
+- Never include dev dependencies (pytest, ruff) — those are for contributors, not users
+- List only direct dependencies, not transitive ones
+- Include a comment explaining why each package is needed
+
+### Common Dependency Patterns by Skill Type
+
+| Skill Type | Typical Dependencies |
+|-----------|---------------------|
+| Data analysis (stocks, agriculture, climate) | `requests`, `pandas`, `numpy` |
+| Report generation | `requests`, `fpdf2` or `reportlab` |
+| Web scraping | `requests`, `beautifulsoup4` |
+| API wrapper | `requests` (or stdlib `urllib`) |
+| Text processing | Stdlib only (`re`, `json`, `csv`) |
+| File format conversion | Stdlib only (or single specialized package) |
+| Database interaction | Stdlib `sqlite3` (or `psycopg2`/`pymysql` for specific DBs) |
+
+---
+
+## Testing Strategy
+
+### Why Test Generated Skills
+
+Skills are opinionated software that teams rely on daily. A skill that produces wrong calculations, misparses API responses, or silently drops data is worse than no skill at all. Tests catch these issues before the skill reaches users.
+
+### What to Test
+
+Focus tests on the parts most likely to break or produce wrong results:
+
+| Priority | What to Test | Why |
+|----------|-------------|-----|
+| **High** | Analysis/calculation functions | Wrong math = wrong decisions |
+| **High** | Data parsing (API response → structured data) | APIs change formats, edge cases in real data |
+| **High** | Input validation | Bad input should fail clearly, not silently produce garbage |
+| **Medium** | Output formatting | Reports and summaries should be consistent |
+| **Medium** | Error handling paths | Verify graceful degradation on API failures, missing data |
+| **Low** | Cache logic | Only if custom caching is complex |
+| **Low** | Config loading | Usually trivial |
+
+### Test Directory Structure
+
+```
+skill-name/
+├── scripts/
+│   ├── analyze.py
+│   ├── fetch.py
+│   └── parse.py
+├── tests/
+│   ├── test_analyze.py       # Unit tests for analysis functions
+│   ├── test_parse.py         # Unit tests for parsing logic
+│   ├── fixtures/
+│   │   ├── sample_api_response.json    # Real API response (anonymized)
+│   │   └── sample_parsed_data.csv      # Expected parsed output
+│   └── conftest.py           # Shared pytest fixtures
+```
+
+### Test Patterns
+
+**Pattern 1: Test analysis functions with known inputs/outputs**
+
+```python
+"""Tests for analyze.py — core calculation functions."""
+import pytest
+from scripts.analyze import analyze_yoy, calculate_trend
+
+def test_yoy_increase():
+    """YoY comparison should detect an increase."""
+    result = analyze_yoy(
+        current_value=150.0,
+        previous_value=100.0,
+    )
+    assert result["change_percent"] == pytest.approx(50.0)
+    assert result["interpretation"] == "significant_increase"
+
+def test_yoy_stable():
+    """Changes under 2% should be interpreted as stable."""
+    result = analyze_yoy(current_value=101.0, previous_value=100.0)
+    assert result["interpretation"] == "stable"
+
+def test_yoy_zero_previous():
+    """Division by zero should raise ValueError, not crash."""
+    with pytest.raises(ValueError, match="previous value cannot be zero"):
+        analyze_yoy(current_value=100.0, previous_value=0.0)
+```
+
+**Pattern 2: Test parsing with fixture data**
+
+```python
+"""Tests for parse.py — API response parsing."""
+import json
+from pathlib import Path
+from scripts.parse import parse_api_response
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+def test_parse_normal_response():
+    """Standard API response should parse to expected structure."""
+    raw = json.loads((FIXTURES / "sample_api_response.json").read_text())
+    result = parse_api_response(raw)
+    assert len(result) > 0
+    assert "year" in result[0]
+    assert "value" in result[0]
+
+def test_parse_empty_response():
+    """Empty API response should return empty list, not crash."""
+    result = parse_api_response({"data": []})
+    assert result == []
+
+def test_parse_malformed_values():
+    """Values with commas (e.g., '15,300,000') should be cleaned."""
+    raw = {"data": [{"value": "15,300,000", "year": "2023"}]}
+    result = parse_api_response(raw)
+    assert result[0]["value"] == 15300000.0
+```
+
+**Pattern 3: Mock external API calls**
+
+```python
+"""Tests for fetch.py — API interaction (mocked)."""
+from unittest.mock import patch, MagicMock
+from scripts.fetch import fetch_data
+
+@patch("scripts.fetch.urllib.request.urlopen")
+def test_fetch_success(mock_urlopen):
+    """Successful API call should return parsed JSON."""
+    mock_response = MagicMock()
+    mock_response.read.return_value = b'{"data": [{"value": "100"}]}'
+    mock_response.__enter__ = lambda s: s
+    mock_response.__exit__ = MagicMock(return_value=False)
+    mock_urlopen.return_value = mock_response
+
+    result = fetch_data(commodity="CORN", year=2023)
+    assert "data" in result
+
+@patch("scripts.fetch.urllib.request.urlopen")
+def test_fetch_rate_limited(mock_urlopen):
+    """429 response should raise RateLimitError."""
+    from urllib.error import HTTPError
+    mock_urlopen.side_effect = HTTPError(
+        url="", code=429, msg="Too Many Requests", hdrs={}, fp=None
+    )
+    with pytest.raises(Exception, match="[Rr]ate limit"):
+        fetch_data(commodity="CORN", year=2023)
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+cd skill-name/
+python -m pytest tests/ -v
+
+# Run with coverage
+python -m pytest tests/ --cov=scripts --cov-report=term-missing
+```
+
+### When to Generate Tests
+
+Tests are generated during Phase 5 (Implementation) after the scripts are written:
+
+1. Write all scripts first (steps 1-5 of Phase 5)
+2. Create `tests/` directory with test files for core functions
+3. Create `tests/fixtures/` with sample data
+4. Run tests to verify they pass
+5. Include test instructions in README.md
+
+**Note:** Tests are recommended but not mandatory for v1.0 of a skill. The validation and security scan gates are always mandatory. Tests become critical when:
+- The skill performs financial calculations (wrong math = real cost)
+- The skill processes sensitive data (parsing errors = data loss)
+- Multiple people will maintain the skill (tests prevent regressions)
+- The skill is being published to the team registry (quality expectation is higher)
+
+---
+
 ## Anti-Patterns
 
 ### Anti-Pattern 1: Partial Implementation

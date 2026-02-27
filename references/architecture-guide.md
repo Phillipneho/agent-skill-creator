@@ -612,7 +612,284 @@ Reference content from SKILL.md using `See references/filename.md for details.` 
 
 ---
 
-## 7. Architecture Checklist
+## 7. When to Refactor a Growing Skill
+
+Skills evolve. A simple skill that started at 500 lines can grow to 5000+ as the team adds analyses, data sources, and edge case handling. Recognize the signs early and refactor before the skill becomes unmaintainable.
+
+### 7.1 Signs It's Time to Refactor
+
+| Signal | What It Means |
+|--------|--------------|
+| SKILL.md approaching 500 lines | Body is stuffed — move content to references |
+| Total code exceeding 3000 lines | Single-domain skill is becoming unwieldy |
+| 3+ unrelated workflows emerging | The skill is doing too many different jobs |
+| Different people maintaining different parts | Ownership boundaries need to be explicit |
+| Users invoking the skill for fundamentally different tasks | The skill should be split into focused components |
+| New data sources that don't share the existing pipeline | Independent fetch/parse/analyze chains = independent skills |
+
+### 7.2 Refactoring Patterns
+
+**Pattern 1: Extract to References (lightest touch)**
+
+When the skill body is too long but the code is fine:
+
+```
+Before: SKILL.md at 480 lines with inline methodology docs
+After:  SKILL.md at 250 lines, references/methodology.md with the detail
+```
+
+This is not a structural refactor — just progressive disclosure. Do this first.
+
+**Pattern 2: Extract Utility Module**
+
+When multiple scripts duplicate logic:
+
+```
+Before: fetch.py has cache logic, analyze.py has cache logic
+After:  utils/cache.py extracted, both scripts import from it
+```
+
+**Pattern 3: Split by Domain (simple → suite)**
+
+When the skill covers multiple independent domains:
+
+```
+Before:
+  financial-analyzer/
+    scripts/
+      stock_analysis.py      # 800 lines
+      portfolio_tracking.py   # 600 lines
+      tax_reporting.py        # 500 lines
+
+After:
+  financial-suite/
+    skills/
+      stock-analyzer/         # Independent skill
+      portfolio-tracker/      # Independent skill
+      tax-reporter/           # Independent skill
+    shared/
+      market_data_client.py   # Shared API connection
+```
+
+**Pattern 4: Extract Shared Resources**
+
+When converting to a suite, identify code that multiple components need:
+
+1. API client code → `shared/api_client.py`
+2. Common data models → `shared/models.py`
+3. Utility functions (date handling, formatting) → `shared/utils.py`
+4. Configuration → `shared/config.json`
+
+### 7.3 Refactoring Decision Process
+
+```
+Is SKILL.md > 400 lines?
+  → Yes: Extract to references (Pattern 1)
+  → Still growing?
+      ↓
+Is total code > 3000 lines with 3+ unrelated workflows?
+  → Yes: Split into suite (Pattern 3)
+  → No, but code is duplicated across scripts?
+      → Extract utilities (Pattern 2)
+  → No: Keep as large simple skill — not everything needs to be a suite
+```
+
+**Critical rule**: Do not split prematurely. Three similar scripts in one domain is better than a suite with three trivially small components. Only split when the workflows are genuinely independent — different data sources, different users, different maintenance cadences.
+
+### 7.4 Refactoring Checklist
+
+- [ ] Identified which pattern applies (1-4)
+- [ ] Each new component is independently functional
+- [ ] Shared resources extracted to `shared/` (not duplicated)
+- [ ] All SKILL.md files are <500 lines
+- [ ] All component names follow kebab-case naming
+- [ ] install.sh updated to handle new structure
+- [ ] README.md updated with new structure
+- [ ] Validation passes on all components
+
+---
+
+## 8. Cross-Component Communication in Suites
+
+When a suite has multiple component skills, they need clear patterns for sharing code, data, and orchestration.
+
+### 8.1 The shared/ Directory
+
+The `shared/` directory contains code that multiple components use. It is **not** a component skill — it has no SKILL.md and is never invoked directly.
+
+```
+suite-name/
+├── shared/
+│   ├── api_client.py       # Shared API connection + authentication
+│   ├── models.py           # Shared data classes and type definitions
+│   ├── utils.py            # Common utilities (date formatting, etc.)
+│   └── config.json         # Shared configuration
+├── skills/
+│   ├── component-a/
+│   │   ├── SKILL.md
+│   │   └── scripts/
+│   │       └── analyze.py  # imports from ../../shared/api_client.py
+│   └── component-b/
+│       ├── SKILL.md
+│       └── scripts/
+│           └── report.py   # imports from ../../shared/api_client.py
+```
+
+### 8.2 Import Patterns
+
+Components import from `shared/` using path manipulation:
+
+```python
+import sys
+from pathlib import Path
+
+# Add shared/ to path
+_SUITE_ROOT = Path(__file__).resolve().parent.parent.parent
+_SHARED_DIR = _SUITE_ROOT / "shared"
+if str(_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHARED_DIR))
+
+from api_client import SuiteAPIClient
+from utils import format_date, parse_currency
+```
+
+**Rules:**
+- Always use `Path(__file__).resolve()` for reliable path resolution
+- Add `shared/` to `sys.path` — do not copy files into each component
+- Import specific names, not `from shared import *`
+- Each component must still work if `shared/` provides enhanced functionality but is not strictly required (graceful degradation)
+
+### 8.3 Orchestration: Suite-Level SKILL.md
+
+The suite-level SKILL.md is the router. When a user's query could match multiple components, the suite SKILL.md tells the agent how to decide:
+
+```markdown
+# /ecommerce-suite — E-commerce Intelligence
+
+You are an e-commerce analytics coordinator. Route user queries
+to the right component skill based on intent:
+
+## Routing Logic
+
+| User Intent | Route To | Example Queries |
+|-------------|----------|-----------------|
+| Revenue, orders, conversion | /sales-monitor | "What were last week's sales?" |
+| Segments, cohorts, churn | /customer-analytics | "Show customer retention by cohort" |
+| Stock levels, reorder | /inventory-tracker | "Which products need reordering?" |
+| Executive summary, dashboard | /executive-reports | "Generate the weekly executive report" |
+
+## Cross-Component Workflows
+
+Some requests require multiple components:
+
+### Full Store Report
+When the user asks for a "full report" or "store overview":
+1. Invoke /sales-monitor for revenue summary
+2. Invoke /customer-analytics for retention metrics
+3. Invoke /inventory-tracker for stock alerts
+4. Invoke /executive-reports to compile everything into a single report
+
+### Churn Impact Analysis
+When the user asks about churn's revenue impact:
+1. Invoke /customer-analytics for churn rate and segments
+2. Invoke /sales-monitor for revenue by customer segment
+3. Combine: revenue at risk = churned segment revenue × churn rate
+```
+
+### 8.4 Data Flow Between Components
+
+Components do not call each other's functions directly. Instead, they communicate through:
+
+1. **Shared data files**: Component A writes to `data/sales_summary.json`, Component B reads it
+2. **Shared API client**: Both components use the same `shared/api_client.py` to fetch data
+3. **Agent orchestration**: The agent (LLM) reads output from Component A and passes relevant parts to Component B
+
+**Anti-patterns to avoid:**
+- Component A importing Component B's scripts directly (creates tight coupling)
+- Components writing to each other's directories
+- Circular dependencies between components
+
+### 8.5 Component Independence Rule
+
+Each component must be independently functional. This means:
+
+- A component extracted from the suite and installed alone must still work
+- `shared/` utilities enhance performance (avoid duplicate API calls, consistent formatting) but are not hard requirements
+- If a component absolutely requires `shared/`, document this in its README.md
+- The suite-level install.sh must install `shared/` alongside all components
+
+---
+
+## 9. Versioning Strategy
+
+### 9.1 Semver for Skills
+
+Skills follow [Semantic Versioning](https://semver.org/):
+
+| Change Type | Version Bump | Examples |
+|------------|-------------|---------|
+| **Patch** (x.y.Z) | Bug fixes, typo corrections, minor doc improvements | Fix API timeout handling, correct calculation formula |
+| **Minor** (x.Y.0) | New analyses, new data sources, new output formats | Add trend analysis, support CSV export, add new API endpoint |
+| **Major** (X.0.0) | Breaking changes to inputs, outputs, or invocation | Change script arguments, rename skill, restructure output format |
+
+### 9.2 What Counts as Breaking
+
+A change is breaking if existing users of the skill would get different behavior or errors:
+
+| Breaking | Not Breaking |
+|----------|-------------|
+| Changing script CLI arguments | Adding new optional arguments |
+| Changing output JSON structure | Adding new fields to output |
+| Removing an analysis function | Adding new analysis functions |
+| Renaming the skill | Updating the description keywords |
+| Changing required environment variables | Adding optional environment variables |
+
+### 9.3 Suite Versioning
+
+Suite versions are independent of component versions:
+
+```
+ecommerce-suite/        version: 2.0.0  (added new component)
+├── sales-monitor/      version: 1.3.0  (3 minor updates since suite v1)
+├── customer-analytics/  version: 1.1.0  (1 minor update)
+├── inventory-tracker/   version: 2.0.0  (breaking change in its own output)
+└── executive-reports/   version: 1.0.0  (unchanged)
+```
+
+**Suite version bump rules:**
+
+| Change | Suite Version Bump |
+|--------|--------------------|
+| Bug fix in one component | No suite bump (component patch only) |
+| New capability in one component | No suite bump (component minor only) |
+| Breaking change in one component | Suite minor bump (warn users) |
+| Add new component to suite | Suite minor bump |
+| Remove component from suite | Suite major bump |
+| Restructure shared/ | Suite major bump |
+
+### 9.4 Version in Practice
+
+The version lives in SKILL.md frontmatter:
+
+```yaml
+metadata:
+  version: 1.2.0
+```
+
+When publishing to the registry, `skill_registry.py` reads this version. Publishing the same name+version is rejected unless `--force` is used.
+
+**When to create a new skill vs. version an existing one:**
+
+| Situation | Action |
+|-----------|--------|
+| Same domain, improved implementation | Version bump (minor or major) |
+| Same domain, fundamentally different approach | New skill (e.g., `stock-analyzer-v2`) |
+| Different domain entirely | New skill |
+| Extending to cover adjacent domain | If tightly coupled: version bump. If independent: new skill or convert to suite |
+
+---
+
+## 10. Architecture Checklist
 
 Use this checklist before proceeding to implementation (Phase 5):
 
@@ -620,6 +897,8 @@ Use this checklist before proceeding to implementation (Phase 5):
 
 - [ ] Determined Simple Skill vs Complex Suite
 - [ ] Justified the decision based on workflow count, code size, and domain scope
+- [ ] If suite: identified shared resources and component boundaries
+- [ ] If suite: designed orchestration logic (routing, cross-component workflows)
 
 ### Naming
 
@@ -627,6 +906,7 @@ Use this checklist before proceeding to implementation (Phase 5):
 - [ ] Name matches the parent directory
 - [ ] No `-cskill` suffix
 - [ ] Name is descriptive and includes the primary domain
+- [ ] If suite: all component names are unique and follow kebab-case
 
 ### Structure
 
@@ -638,6 +918,8 @@ Use this checklist before proceeding to implementation (Phase 5):
 - [ ] `README.md` planned with multi-platform install instructions
 - [ ] No `marketplace.json` for Simple Skills
 - [ ] If Complex Suite with `marketplace.json`, only official fields used
+- [ ] If suite: shared/ directory planned with import patterns documented
+- [ ] If suite: each component is independently functional
 
 ### Performance
 
@@ -645,6 +927,18 @@ Use this checklist before proceeding to implementation (Phase 5):
 - [ ] Rate limiting planned for external APIs
 - [ ] Error handling approach defined (retries, backoff, fallbacks)
 - [ ] SKILL.md size managed via progressive disclosure to `references/`
+
+### Dependencies
+
+- [ ] Dependency strategy decided (stdlib-only vs. third-party)
+- [ ] requirements.txt planned if third-party packages needed
+- [ ] No unnecessary heavy dependencies
+
+### Versioning
+
+- [ ] Initial version set (1.0.0)
+- [ ] Version bump rules understood (patch/minor/major)
+- [ ] If suite: component versions independent of suite version
 
 ### Documentation
 

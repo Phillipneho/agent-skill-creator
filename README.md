@@ -1,6 +1,6 @@
 # Agent Skill Creator
 
-**Create cross-platform agent skills from natural language workflow descriptions.**
+**Turn any workflow into reusable AI agent software — no spec writing, no prompt engineering, no coding required.**
 
 [![Agent Skills Open Standard](https://img.shields.io/badge/Agent%20Skills-Open%20Standard-blue)](https://github.com/anthropics/agent-skills-spec)
 [![Version](https://img.shields.io/badge/version-4.0.0-brightgreen)]()
@@ -8,93 +8,45 @@
 
 ---
 
-## What Is This?
+## The Problem
 
-Agent Skill Creator is a **Level 5 skill dark factory**. Install it once, then type `/agent-skill-creator` followed by whatever you have — workflow descriptions, documentation, links, existing code, API docs, compliance checklists, PDFs. The agent deeply reads and understands your material, generates its own internal specification, implements the skill end-to-end from that specification, validates it, security-scans it, and delivers a production-ready skill. You provide the raw material and evaluate the outcome. The agent handles everything in between.
+Every AI agent (Claude Code, GitHub Copilot, Cursor, Windsurf, Codex, Gemini) starts from zero. It doesn't know your company's processes, data sources, or compliance requirements. So every person re-explains the same workflows in every conversation. Knowledge stays in individual chat histories. New hires start from scratch.
 
-Inspired by the [dark factory model](https://www.youtube.com/watch?v=bDcgHzCBgmQ) where specifications go in and working software comes out: the human removes the cognitive constraint by providing domain knowledge, the factory removes the implementation constraint by building autonomously, and the quality gates remove the trust constraint by validating automatically.
+**Agent skills fix this.** A skill is structured knowledge your agent loads automatically — like installing an app. Once installed, anyone on your team can invoke it and get consistent results, every time, on any platform.
 
-**Input**: Raw material — documentation, links, code, process descriptions, PDFs, anything that captures the workflow.
-**Output**: A self-contained, validated, security-scanned skill directory ready to install on any platform and publish to the team registry.
+**The catch:** building a proper skill requires understanding the spec format, writing clear prompt instructions, designing how information loads progressively, writing functional code, and getting activation keywords right. Even simple skills take [multiple rounds of iteration](https://www.youtube.com/watch?v=izJkgLqlbN8) to get right.
 
-### Built-in Quality Gates
-
-Every skill goes through automated checks before it reaches your team. You don't need to trust the output blindly — the toolchain enforces quality:
-
-| Gate | What It Checks | When It Runs |
-|------|---------------|--------------|
-| **Spec Validation** | SKILL.md exists, frontmatter is well-formed, name follows kebab-case rules, description under 1024 chars, body under 500 lines | During creation (Phase 5) and on every publish |
-| **Security Scan** | No hardcoded API keys, no exposed credentials, no `eval()`/`exec()` injection risks, no sensitive files (.env, secrets.json) | During creation (Phase 5) and on every publish |
-| **Naming Convention** | Directory name matches SKILL.md `name` field, no consecutive hyphens, 1-64 characters | During validation |
-| **Structure Check** | Required files present, local references resolve, metadata fields populated | During validation |
-
-Skills that fail validation **cannot be published**. Skills with high-severity security issues **are blocked** unless explicitly overridden. This means every skill in the registry has passed both gates — your team can install with confidence.
-
-You can also run these checks independently at any time:
-
-```bash
-python3 scripts/validate.py ./my-skill/          # Spec compliance
-python3 scripts/security_scan.py ./my-skill/      # Security audit
-```
+**Agent Skill Creator removes that barrier entirely.** You pass in whatever you have — messy docs, links, code, PDFs, transcripts, vague descriptions — and it produces a validated, security-scanned skill ready to install and share. You describe what you do; it builds the software.
 
 ---
 
-## Why Agent Skills Matter
+## Quick Start
 
-AI agents (Claude Code, GitHub Copilot, Cursor, Windsurf, Codex, Gemini) are becoming the primary interface for knowledge work. But out of the box, every agent starts from zero — it doesn't know your company's processes, data sources, naming conventions, or compliance requirements.
-
-**Agent skills solve this.** A skill is structured domain knowledge that an agent loads automatically. Instead of re-explaining your workflow every conversation, the agent already knows how to do it.
-
-**The corporate opportunity:**
-
-- **Without skills**: Every person prompts the agent differently. Knowledge stays in individual chat histories. New hires start from scratch. The same workflow gets re-explained hundreds of times.
-- **With skills**: Someone describes a workflow once. The agent-skill-creator turns it into a reusable skill. It gets published to the team registry. Now every agent on the team — regardless of platform — knows how to do that workflow. Knowledge compounds instead of evaporating.
-
-**What changes in practice:**
-
-1. **Operations teams** describe their runbooks. Skills get created. Now agents can execute standard procedures consistently.
-2. **Data teams** describe their analysis pipelines. Skills get created. Now any team member can run the same analysis by asking their agent.
-3. **Finance teams** describe their reporting workflows. Skills get created. Now quarterly reports follow the same methodology every time.
-4. **Engineering teams** describe their deployment processes, code review standards, testing protocols. Skills get created. Now agents enforce consistency across the organization.
-
-The pattern is always the same: **capture tacit knowledge as skills, share them through the registry, and let agents scale that knowledge across the team.**
-
-**Why you can trust the output:**
-
-This is a Level 5 dark factory — not "prompt and pray." The agent reads your material, generates its own internal specification, implements from that specification, and then runs automated quality gates before anything is delivered. Validation checks spec compliance (structure, naming, frontmatter). Security scanning checks for hardcoded credentials and injection patterns. Skills that fail these gates cannot be published to the registry.
-
-The human provides the domain knowledge (the hard part). The factory builds the skill (the tedious part). The quality gates verify the output (the trust part). Three constraints removed: cognitive, implementation, and trust.
-
-This repo is the complete toolkit: create skills from raw material, validate them against the open standard, security-scan them, and share them through a git-based registry that gives you version history, access control, and review workflows for free.
-
----
-
-## End-to-End Walkthrough
-
-This is the full lifecycle from idea to team-wide adoption.
-
-### Step 1: Install the Skill Creator
-
-Clone this repo into your agent's skill directory:
+### 1. Install (one command)
 
 ```bash
 # Claude Code
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
 
+# VS Code with GitHub Copilot
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+
 # Cursor
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
-
-# Any other supported platform — see "Setup by Platform" below
 ```
 
-### Step 2: Invoke the Skill Creator
+Other platforms: [see full list below](#all-platforms).
 
-Open your agent and type `/agent-skill-creator` followed by whatever you have. The more context you provide, the better the skill:
+### 2. Use it
+
+Open your agent and type `/agent-skill-creator` followed by whatever you have:
 
 ```
 /agent-skill-creator Every week I pull sales data from our CRM, clean
 duplicate entries, calculate regional totals, and generate a PDF report.
 ```
+
+You can pass anything — plain English, documentation links, existing code, API docs, PDFs, database schemas, transcripts. Combine multiple sources in one message. The more context, the better the result.
 
 ```
 /agent-skill-creator Based on our deployment runbook: https://wiki.internal/deploy-process
@@ -109,282 +61,141 @@ duplicate entries, calculate regional totals, and generate a PDF report.
 Create a skill that queries stock levels and generates reorder reports.
 ```
 
-```
-/agent-skill-creator Based on compliance-checklist.pdf, create a SOX audit skill
-```
+### 3. What comes out
 
-You can pass in plain English descriptions, documentation links, existing code, API docs, PDFs — anything. Combine multiple sources in one message. The agent reads everything and runs the dark factory pipeline:
+A complete skill, automatically installed on your platform:
 
 ```
-STAGE 1: UNDERSTAND AND SPECIFY
-  DISCOVERY        → Reads all your material, researches APIs, data sources
-  DESIGN           → Generates its own internal specification (use cases, methods, edge cases)
+Skill installed successfully.
 
-STAGE 2: BUILD AND VERIFY
-  ARCHITECTURE     → Structures the skill directory
-  DETECTION        → Crafts activation keywords so the skill triggers reliably
-  IMPLEMENTATION   → Creates all files, validates, security-scans, delivers
+To use it, open a new session and type:
+
+  /sales-report-builder Generate the weekly report for the West region
+
+Installed at: ~/.claude/skills/sales-report-builder
 ```
 
-The agent deeply understands your material before writing a single line of code. It generates its own specification — a complete internal contract for what the skill must do — and then implements from that specification autonomously. The output is a complete skill directory (e.g., `./sales-report-builder/`) with functional code, documentation, and a spec-compliant SKILL.md.
+The agent detects your platform (Claude Code, Cursor, Copilot, etc.), installs the skill to the right location, and tells you exactly how to invoke it. No manual steps.
 
-### Step 3: Automated Quality Gates
+The generated skill directory looks like this:
 
-Every skill the pipeline produces goes through two automated checks before it's considered ready:
-
-```bash
-# Spec compliance — structure, naming, frontmatter, file references
-python3 scripts/validate.py ./sales-report-builder/
-
-# Security — no hardcoded keys, no credential exposure, no injection risks
-python3 scripts/security_scan.py ./sales-report-builder/
+```
+sales-report-builder/
+├── SKILL.md          # Skill definition (activates with /sales-report-builder)
+├── scripts/          # Functional Python code
+├── references/       # Detailed documentation
+├── assets/           # Templates, configs
+├── install.sh        # Cross-platform installer (for sharing with others)
+└── README.md         # Installation instructions (for sharing with others)
 ```
 
-These run automatically at the end of Phase 5 (Implementation) and again when you publish to the registry. If validation fails or the security scan finds high-severity issues, the skill is blocked until the issues are fixed. You don't have to review the output manually to trust it — the toolchain does that for you.
+Your team installs it the same way they installed agent-skill-creator — one `git clone` — and invokes it with `/sales-report-builder`. The included `install.sh` auto-detects their platform too.
 
-### Step 4: Publish to the Team Registry
+---
 
-The registry lives inside this repo at `registry/`. Publishing copies the skill into the shared catalog:
+## How It Works
+
+You don't need to understand any of this to use it. But if you're curious:
+
+The agent doesn't just follow your description literally. Humans describe what they *do*, not what they *need*. "I pull sales data and make a report" hides a dozen implicit requirements — who reads the report, what format, what happens when data is missing. The agent reads all your material, uncovers these implicit requirements, and generates its own internal specification before writing any code. It builds from that deeper understanding, not from your surface description.
+
+```
+UNDERSTAND    Read all material → uncover real intent → generate internal spec
+BUILD         Structure directory → write code and docs → craft activation keywords
+VERIFY        Spec validation → security scan → block delivery if either fails
+```
+
+Every skill is automatically validated (correct structure, naming, metadata) and security-scanned (no hardcoded keys, no credential exposure, no injection risks) before delivery. Skills that fail these checks are blocked.
+
+---
+
+## Share Skills Across Your Team
+
+Once a skill is created, publish it so everyone can use it.
+
+### Publish
 
 ```bash
 python3 scripts/skill_registry.py publish ./sales-report-builder/ --tags sales,reports,crm
+git add registry/ && git commit -m "Add sales-report-builder skill" && git push
 ```
 
-This validates the skill, runs the security scan, copies the files into `registry/skills/sales-report-builder/`, and updates `registry/registry.json`.
-
-Then commit and push so the team can access it:
-
-```bash
-git add registry/
-git commit -m "feat: Add sales-report-builder skill"
-git push
-```
-
-### Step 5: Team Discovers and Installs Skills
-
-Colleagues pull the latest and browse the catalog:
+### Discover
 
 ```bash
 git pull
-
-# What skills are available?
-python3 scripts/skill_registry.py list
-
-# Output:
-# NAME                  VERSION  AUTHOR       TAGS
-# sales-report-builder  1.0.0    sales-team   sales, reports, crm
-# data-quality-checker  1.0.0    data-team    data, validation
-# deploy-checklist      2.0.0    engineering  deploy, ci, checklist
-
-# Search for something specific
-python3 scripts/skill_registry.py search "sales"
-
-# Get full details
-python3 scripts/skill_registry.py info sales-report-builder
-
-# Install it (auto-detects your platform)
-python3 scripts/skill_registry.py install sales-report-builder
-```
-
-### Step 6: Use the Skill
-
-After installing, the colleague opens their agent and types:
-
-```
-/sales-report-builder Generate the weekly report for the West region
-```
-
-The skill activates — just like `/agent-skill-creator` or `/clarity` — and executes the workflow: pulling data, cleaning it, calculating totals, generating the PDF. Same process, same quality, every time, on any platform.
-
-Every skill the factory produces is a first-class citizen: installed with `git clone`, invoked with `/skill-name`, self-contained with its own scripts, references, and documentation.
-
-### Step 7: Iterate
-
-Skills improve over time. Someone adds error handling for API timeouts. Another person adds a new region. They publish updates to the registry, the team pulls, and everyone benefits.
-
-```bash
-# Update and re-publish
-python3 scripts/skill_registry.py publish ./sales-report-builder/ --force
-git add registry/ && git commit -m "fix: Handle CRM API timeouts" && git push
-```
-
-### The Result
-
-Over weeks and months, the registry grows organically. Each team contributes skills from their domain. The organization builds a **living library of operational knowledge** that every agent can access — regardless of which platform (Claude Code, Cursor, Copilot, etc.) each person uses.
-
-```bash
 python3 scripts/skill_registry.py list
 
 # NAME                    VERSION  AUTHOR        TAGS
 # sales-report-builder    1.2.0    sales-team    sales, reports, crm
-# data-quality-checker    1.0.0    data-team     data, validation
 # deploy-checklist        2.1.0    engineering   deploy, ci, checklist
 # quarterly-compliance    1.0.0    legal-team    compliance, audit
-# customer-churn-model    3.0.0    data-science  ml, churn, prediction
-# incident-runbook        1.1.0    sre-team      incidents, on-call
-# onboarding-guide        1.0.0    hr-team       onboarding, new-hire
+
+python3 scripts/skill_registry.py search "sales"
+python3 scripts/skill_registry.py info sales-report-builder
 ```
 
-This is the shift: from individual prompting to organizational capability.
+### Install
+
+```bash
+python3 scripts/skill_registry.py install sales-report-builder
+```
+
+Auto-detects your platform (Claude Code, Cursor, etc.) and installs to the right location.
+
+### The result over time
+
+Each team contributes skills from their domain. Operations teams capture runbooks. Data teams capture analysis pipelines. Finance teams capture reporting workflows. Engineering teams capture deployment processes. The organization builds a living library of operational knowledge that every agent can access.
 
 ---
 
-## Quick Start
+## All Platforms
 
-### Claude Code
+Works in IDEs and CLI tools. Same install, same invocation, same results.
 
-```bash
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
-```
-
-### GitHub Copilot
+### IDEs
 
 ```bash
+# VS Code with GitHub Copilot
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
-```
 
-### Cursor
-
-```bash
+# Cursor
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
-```
 
-After installing, open your agent and type:
-
-```
-/agent-skill-creator Create a skill for analyzing CSV files
-```
-
-The skill creator activates and walks you through the full pipeline. You can also just describe a workflow naturally — the skill activates on phrases like "create a skill for...", "automate this workflow", etc.
-
-For Windsurf, Cline, Codex CLI, Gemini CLI, and other platforms see [Setup by Platform](#setup-by-platform-complete-guide) below.
-
----
-
-## Usage
-
-### Invocation
-
-Type `/agent-skill-creator` followed by your input:
-
-```
-/agent-skill-creator Create a skill for analyzing stock market data
-/agent-skill-creator Every day I process CSV files manually, automate this
-/agent-skill-creator https://wiki.internal/weather-api-docs
-/agent-skill-creator See scripts/data_pipeline.py — make this a reusable skill
-```
-
-The skill also activates on natural language without the prefix:
-
-```
-Create a skill for weather alerts
-Automate this workflow
-Validate this skill
-Export this skill for Cursor
-```
-
-### What Happens
-
-The dark factory reads your material, generates its own spec, builds the skill, and verifies it:
-
-```
-UNDERSTAND:  Read all material, research domain, generate internal specification
-BUILD:       Structure directory, write all code and docs, craft activation keywords
-VERIFY:      Run spec validation + security scan — block delivery if either fails
-```
-
-Output: a complete skill directory you can install on any supported platform.
-
----
-
-## Setup by Platform (Complete Guide)
-
-Each platform installs with a single `git clone` directly into the right location. Replace `agent-skill-creator` with the skill name when installing generated skills.
-
-### Claude Code
-
-```bash
-# Personal skill (available in all projects)
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
-
-# Per-project (scoped to one repo)
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .claude/skills/agent-skill-creator
-```
-
-### GitHub Copilot (CLI + VS Code)
-
-```bash
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
-```
-
-### Cursor
-
-```bash
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
-```
-
-Cursor reads SKILL.md natively alongside its `.mdc` rules.
-
-### Windsurf
-
-```bash
+# Windsurf
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/skills/agent-skill-creator
-```
 
-### Cline
-
-```bash
+# Cline (VS Code Extension)
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/agent-skill-creator
 ```
 
-### OpenAI Codex CLI
+### CLI Tools
 
 ```bash
+# Claude Code (personal — available in all projects)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
+
+# Claude Code (per-project)
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .claude/skills/agent-skill-creator
+
+# GitHub Copilot CLI
+git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
+
+# OpenAI Codex CLI
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .codex/skills/agent-skill-creator
-```
 
-### Gemini CLI
-
-```bash
+# Gemini CLI
 git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .gemini/skills/agent-skill-creator
 ```
 
-### Claude Desktop / claude.ai (Export)
-
-These platforms use `.zip` upload instead of directory copying:
-
-1. Export: `python3 scripts/export_utils.py ./agent-skill-creator/ --variant desktop`
-2. Open Claude Desktop or claude.ai
-3. Go to Settings > Skills > Upload skill
-4. Select the generated `.zip` file
-
-### Claude API (Programmatic)
+### Claude Desktop / claude.ai
 
 ```bash
-python3 scripts/export_utils.py ./agent-skill-creator/ --variant api
+python3 scripts/export_utils.py ./agent-skill-creator/ --variant desktop
+# Then: Settings > Skills > Upload the generated .zip
 ```
 
-```python
-import anthropic
-
-client = anthropic.Anthropic()
-
-with open("agent-skill-creator-api-v4.0.0.zip", "rb") as f:
-    skill = client.skills.create(file=f, name="agent-skill-creator")
-
-response = client.messages.create(
-    model="claude-sonnet-4",
-    messages=[{"role": "user", "content": "Your query here"}],
-    container={"type": "custom_skill", "skill_id": skill.id},
-    betas=["code-execution-2025-08-25", "skills-2025-10-02"],
-)
-```
-
-Note: API sandbox has no network access, no pip install at runtime, and an 8 MB size limit.
-
-### Updating
-
-To update an installed skill, just `git pull` from inside the skill directory:
+### Update
 
 ```bash
 cd ~/.claude/skills/agent-skill-creator && git pull
@@ -392,285 +203,69 @@ cd ~/.claude/skills/agent-skill-creator && git pull
 
 ---
 
-## How It Works
+## Quality Gates
 
-| Phase | What Happens | Key Output |
-|-------|-------------|------------|
-| **Discovery** | Researches the domain, identifies APIs and data sources | Domain model, API list |
-| **Design** | Defines use cases, analysis methods, output formats | Use case specs, methodology docs |
-| **Architecture** | Decides simple skill vs. complex suite, plans directory structure | Architecture decision, file plan |
-| **Detection** | Crafts SKILL.md description and activation keywords | SKILL.md frontmatter, trigger phrases |
-| **Implementation** | Generates all code, docs, installer; validates and scans | Complete skill directory |
+Every skill goes through automated checks before delivery and on every publish:
 
-For full pipeline documentation, see [references/pipeline-phases.md](references/pipeline-phases.md).
+| Gate | What It Checks |
+|------|---------------|
+| **Spec Validation** | SKILL.md structure, frontmatter format, naming rules, file references |
+| **Security Scan** | No hardcoded API keys, no credentials, no injection patterns |
 
----
-
-## Generated Skill Format
-
-Every generated skill follows the Agent Skills Open Standard:
-
-```
-skill-name/
-  SKILL.md              # Main skill file (<500 lines, spec-compliant)
-  scripts/              # Functional Python code
-  references/           # Detailed documentation (progressive disclosure)
-  assets/               # Templates, schemas, config files
-  install.sh            # Cross-platform installer
-  README.md             # Multi-platform install instructions
-```
-
-### SKILL.md Frontmatter
-
-```yaml
----
-name: skill-name
-description: >-
-  Concise description of what the skill does (<=1024 chars).
-  Includes activation trigger phrases.
-license: MIT
-metadata:
-  author: Your Name
-  version: 1.0.0
-compatibility: >-
-  Works on Claude Code, GitHub Copilot, Cursor, Windsurf,
-  Cline, Codex CLI, Gemini CLI.
----
-```
-
-Followed by sections: When to Use, Overview, Workflow, Implementation Guidelines, and References.
-
-**Naming rules**: `kebab-case`, 1-64 characters, pattern `^[a-z][a-z0-9-]*[a-z0-9]$`, must match directory name.
-
----
-
-## Tools
-
-### Validate a Skill
-
-Check spec compliance against the Agent Skills Open Standard:
+Run them independently anytime:
 
 ```bash
 python3 scripts/validate.py ./my-skill/
-
-# JSON output (for CI/CD)
-python3 scripts/validate.py ./my-skill/ --json
-```
-
-**Checks**: SKILL.md existence, valid frontmatter, kebab-case name (1-64 chars), description under 1024 chars, body under 500 lines, required directory structure, install.sh exists and is executable.
-
-**Exit codes**: `0` = valid (may have warnings), `1` = invalid (errors found).
-
-### Security Scan
-
-Scan for common security issues before sharing or deploying:
-
-```bash
 python3 scripts/security_scan.py ./my-skill/
-
-# JSON output
-python3 scripts/security_scan.py ./my-skill/ --json
 ```
 
-**Detects**: hardcoded API keys (OpenAI, AWS, GitHub, GitLab), tokens and secrets, command injection patterns, unsafe file operations, credential exposure in config files.
-
-**Exit codes**: `0` = clean, `1` = issues found.
-
-### Export for Other Platforms
-
-Package skills for distribution:
-
-```bash
-# Desktop/Web (.zip for Claude Desktop, claude.ai)
-python3 scripts/export_utils.py ./my-skill/ --variant desktop
-
-# API (.zip for Claude API, <=8MB)
-python3 scripts/export_utils.py ./my-skill/ --variant api
-
-# All variants
-python3 scripts/export_utils.py ./my-skill/
-```
-
-Output goes to `exports/`. See [references/export-guide.md](references/export-guide.md) for full documentation.
-
-### Skill Registry
-
-Share and discover skills across your team. The registry lives inside this repo (`registry/`) so one `git pull` gives everyone access to all published skills.
-
-**First-time setup** (once per organization):
-
-```bash
-python3 scripts/skill_registry.py init --name "Acme Corp Skills"
-```
-
-**Typical workflow:**
-
-```bash
-# Someone describes a workflow, the agent creates a skill
-# "Every week I pull sales data, clean it, and make a report"
-# → agent creates ./sales-report-builder/
-
-# Publish it so the team can use it
-python3 scripts/skill_registry.py publish ./sales-report-builder/ --tags sales,reports
-
-# Browse what the team has built
-python3 scripts/skill_registry.py list
-python3 scripts/skill_registry.py search "sales"
-
-# Get details about a skill
-python3 scripts/skill_registry.py info sales-report-builder
-
-# Install a skill to your platform (auto-detects Claude Code, Cursor, etc.)
-python3 scripts/skill_registry.py install sales-report-builder
-
-# Install for a specific platform or at project level
-python3 scripts/skill_registry.py install sales-report-builder --platform cursor --project
-
-# Remove a skill from the registry
-python3 scripts/skill_registry.py remove sales-report-builder --force
-```
-
-After publishing, commit and push so colleagues can `git pull` and install the new skill.
-
-All commands support `--json` for machine-readable output. Use `--force` to overwrite duplicates or bypass confirmation prompts.
-
-**Exit codes**: `0` = success, `1` = error.
+Skills that fail validation cannot be published. Skills with high-severity security issues are blocked.
 
 ---
 
-## Architecture Decisions
+## Tools Reference
 
-The creator automatically decides simple vs. complex based on scope:
-
-| Factor | Simple Skill | Complex Suite |
-|--------|-------------|---------------|
-| Workflows | 1-2 | 3+ distinct |
-| Code size | <1000 lines | >2000 lines |
-| Structure | Single SKILL.md | Multiple component SKILL.md files |
-
-For detailed decision logic, see [references/architecture-guide.md](references/architecture-guide.md).
-
----
-
-## For AI Agents (Machine-Readable Reference)
-
-This section provides structured metadata for AI agents ingesting this README as context.
-
-### Activation Triggers
-
-```
-# Primary invocation
-/agent-skill-creator <description, links, code, docs>
-
-# Natural language (also works)
-create a skill for [domain]
-automate this workflow
-every day I [task]
-I need to automate [task]
-validate this skill
-export this skill for [platform]
-```
-
-### Install Commands
+### Registry Commands
 
 ```bash
-# Claude Code (personal)
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
-# GitHub Copilot
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .github/skills/agent-skill-creator
-# Cursor
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rules/agent-skill-creator
-# Windsurf
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .windsurf/skills/agent-skill-creator
-# Cline
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .clinerules/agent-skill-creator
-# Codex CLI
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .codex/skills/agent-skill-creator
-# Gemini CLI
-git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .gemini/skills/agent-skill-creator
-# Update
-cd <install-path>/agent-skill-creator && git pull
+python3 scripts/skill_registry.py init --name "Acme Corp Skills"     # First-time setup
+python3 scripts/skill_registry.py publish ./skill/ --tags t1,t2      # Publish a skill
+python3 scripts/skill_registry.py list                                # Browse all skills
+python3 scripts/skill_registry.py search "query"                     # Search skills
+python3 scripts/skill_registry.py info skill-name                    # Skill details
+python3 scripts/skill_registry.py install skill-name                 # Install a skill
+python3 scripts/skill_registry.py remove skill-name --force          # Remove a skill
 ```
 
-### Tool Commands
+### Validation and Security
 
 ```bash
-# Validate
-python3 scripts/validate.py PATH      # Human output
-python3 scripts/validate.py PATH --json  # Machine output
-
-# Security scan
-python3 scripts/security_scan.py PATH
-python3 scripts/security_scan.py PATH --json
-
-# Export
-python3 scripts/export_utils.py PATH --variant desktop
-python3 scripts/export_utils.py PATH --variant api
-
-# Registry (default --registry ./registry)
-python3 scripts/skill_registry.py init --name "Team Name"
-python3 scripts/skill_registry.py publish SKILL_PATH --tags T1,T2
-python3 scripts/skill_registry.py list [--json]
-python3 scripts/skill_registry.py search QUERY [--json]
-python3 scripts/skill_registry.py install SKILL_NAME [--platform PLATFORM] [--project]
-python3 scripts/skill_registry.py info SKILL_NAME [--json]
-python3 scripts/skill_registry.py remove SKILL_NAME --force
+python3 scripts/validate.py ./skill/               # Spec compliance
+python3 scripts/validate.py ./skill/ --json         # Machine-readable output
+python3 scripts/security_scan.py ./skill/           # Security audit
+python3 scripts/security_scan.py ./skill/ --json    # Machine-readable output
 ```
 
-### Platform Paths
+### Export
 
-| Platform | Path | Scope |
-|----------|------|-------|
-| Claude Code | `~/.claude/skills/` | User-level |
-| Claude Code | `.claude/skills/` | Project-level |
-| GitHub Copilot | `.github/skills/` | Project-level |
-| Cursor | `.cursor/rules/` | Workspace |
-| Windsurf | `.windsurf/skills/` | Workspace |
-| Cline | `.clinerules/` | Workspace |
-| Codex CLI | `.codex/skills/` | Workspace |
-| Gemini CLI | `.gemini/skills/` | Workspace |
-| Claude Desktop | `.zip` upload | App-level |
-| claude.ai | `.zip` upload | Web |
-| Claude API | `.zip` via API | Programmatic |
-
-### SKILL.md Spec (Required Fields)
-
-```yaml
----
-name: kebab-case-name          # 1-64 chars, ^[a-z][a-z0-9-]*[a-z0-9]$
-description: >-                # 1-1024 chars, include activation keywords
-  What this skill does...
-license: MIT
-metadata:
-  author: Author Name
-  version: X.Y.Z
----
-# Body: <500 lines. Move detailed content to references/.
+```bash
+python3 scripts/export_utils.py ./skill/ --variant desktop    # For Claude Desktop
+python3 scripts/export_utils.py ./skill/ --variant api        # For Claude API
 ```
 
-### Pipeline Phases
-
-```
-DISCOVERY -> DESIGN -> ARCHITECTURE -> DETECTION -> IMPLEMENTATION
-```
-
-Each phase is documented in `references/phase{1..5}-*.md`.
+All commands use exit code `0` for success, `1` for errors. All support `--json` for CI/CD integration.
 
 ---
 
 ## Troubleshooting
 
-**Skill not activating**: Ensure SKILL.md `description` field contains the trigger phrases you expect. The description is the primary activation mechanism.
+**Skill not activating**: Check that the SKILL.md `description` field contains keywords matching your query. The description is how the agent decides when to activate the skill.
 
-**Validation fails on name**: Names must be kebab-case, 1-64 characters, no consecutive hyphens, no leading/trailing hyphens. Pattern: `^[a-z][a-z0-9-]*[a-z0-9]$`.
+**Validation fails on name**: Names must be lowercase, use hyphens between words, 1-64 characters. Examples: `sales-report-builder`, `deploy-checklist`.
 
-**SKILL.md too long**: Body must be under 500 lines. Move detailed documentation to `references/` and link from the main SKILL.md.
+**SKILL.md too long**: Move detailed content to `references/` files and link from the main SKILL.md.
 
-**Export fails with size error**: API exports have an 8 MB limit. Reduce asset sizes or exclude large files.
-
-**install.sh not executable**: Run `chmod +x install.sh` before executing.
-
-**Platform not auto-detected**: Use `./install.sh --platform <name>` to specify explicitly.
+**Platform not auto-detected**: Use `--platform cursor` (or copilot, windsurf, etc.) to specify explicitly.
 
 ---
 
@@ -678,24 +273,24 @@ Each phase is documented in `references/phase{1..5}-*.md`.
 
 ```
 agent-skill-creator/
-  SKILL.md                      # Meta-skill definition (the product)
+  SKILL.md                      # The skill definition (what the agent reads)
   README.md                     # This file
   scripts/
-    validate.py                 # Spec compliance validator
+    validate.py                 # Spec compliance checker
     security_scan.py            # Security scanner
-    export_utils.py             # Cross-platform export tool
-    skill_registry.py           # Shared skill registry CLI
-    install-template.sh         # Template for generated install.sh
-  references/
-    pipeline-phases.md          # Full 5-phase pipeline instructions
-    architecture-guide.md       # Simple skill vs. complex suite
-    cross-platform-guide.md     # Platform-specific details
-    export-guide.md             # Export system documentation
-    quality-standards.md        # Quality and code standards
-    templates-guide.md          # Template system guide
-    interactive-mode.md         # Interactive wizard docs
-    multi-agent-guide.md        # Suite creation docs
-    agentdb-integration.md      # Optional learning system
+    export_utils.py             # Cross-platform export
+    skill_registry.py           # Team skill registry
+    install-template.sh         # Template for generated installers
+  references/                   # Detailed docs (loaded by the agent on demand)
+    pipeline-phases.md          # Full creation pipeline
+    architecture-guide.md       # Skill structure decisions
+    quality-standards.md        # Code and documentation standards
+    multi-agent-guide.md        # Multi-skill suite creation
+    cross-platform-guide.md     # Platform compatibility
+    export-guide.md             # Export documentation
+    templates-guide.md          # Template system
+    interactive-mode.md         # Interactive wizard
+    agentdb-integration.md      # Learning system
     phase1-discovery.md         # Phase 1 deep dive
     phase2-design.md            # Phase 2 deep dive
     phase3-architecture.md      # Phase 3 deep dive
@@ -703,10 +298,10 @@ agent-skill-creator/
     phase5-implementation.md    # Phase 5 deep dive
     templates/                  # Skill templates
     examples/stock-analyzer/    # Example skill
-  registry/                     # Shared skill catalog (git-tracked)
-    registry.json               # Skill manifest
-    skills/                     # Published skill directories
-  exports/                      # Export output directory
+  registry/                     # Shared skill catalog
+    registry.json
+    skills/
+  exports/                      # Export output
 ```
 
 ---
@@ -714,24 +309,24 @@ agent-skill-creator/
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
+2. Create a feature branch
 3. Make your changes
-4. Run validation: `python3 scripts/validate.py ./`
-5. Run security scan: `python3 scripts/security_scan.py ./`
-6. Submit a pull request
+4. Run `python3 scripts/validate.py ./` and `python3 scripts/security_scan.py ./`
+5. Submit a pull request
 
 ---
 
 ## License
 
-MIT License.
+MIT
 
 ---
 
 ## Links
 
 - [Agent Skills Open Standard](https://github.com/anthropics/agent-skills-spec)
+- [What are Claude Skills? (video)](https://www.youtube.com/watch?v=izJkgLqlbN8)
 - [Architecture Guide](references/architecture-guide.md)
-- [Pipeline Phases Reference](references/pipeline-phases.md)
+- [Pipeline Phases](references/pipeline-phases.md)
 - [Cross-Platform Guide](references/cross-platform-guide.md)
 - [Export Guide](references/export-guide.md)
