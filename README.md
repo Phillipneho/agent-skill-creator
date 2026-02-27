@@ -149,21 +149,33 @@ Any colleague installs any skill with one `git clone`. Any agent on any platform
 
 ### For teams and consultants: the skill registry
 
-When your organization has more than a few skills, the agent offers to set up a **team skill registry** — a single repo where all skills are published, browsable, and installable. Think of it as an internal app store for agent skills.
+When an organization has more than a few skills, the agent offers to set up a **team skill registry** — a shared git repo where all team members publish their skills and anyone can browse and install them.
 
-The agent sets it up automatically when it detects you're building for a team. Or you can set it up manually:
+The consultant (or team lead) sets it up once:
 
 ```bash
 python3 scripts/skill_registry.py init --name "Acme Corp Skills"
+```
+
+Then every team member can:
+
+```bash
+# Publish a skill they created
 python3 scripts/skill_registry.py publish ./sales-report-skill/ --tags sales,reports
+
+# Browse what's available
 python3 scripts/skill_registry.py list
+
+# Search for a specific skill
 python3 scripts/skill_registry.py search "sales"
+
+# Install a colleague's skill (auto-detects VS Code Copilot, Cursor, etc.)
 python3 scripts/skill_registry.py install sales-report-skill
 ```
 
-The registry is a git repo. Clone it once, and every team member can browse and install any skill. No servers, no databases — just git.
+The registry is a git repo on GitHub or GitLab. Clone it once, and every team member can publish and install. No servers, no databases — just git.
 
-**For AI consultants:** Install agent-skill-creator, create skills from your client's workflows, set up the registry, and hand over a self-sustaining system. After you leave, the team keeps creating and sharing skills on their own.
+**For AI consultants:** The engagement model is teach, not build. Install agent-skill-creator on each team member's machine, create the shared `{team}-skills-registry` repo, teach the team the 5-step workflow (install, clone registry, create skill, publish, install from registry), and hand over a self-sustaining system. After you leave, the team keeps creating and sharing skills on their own. They know their workflows better than you do — your job is to remove the friction.
 
 ---
 
