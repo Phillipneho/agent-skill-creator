@@ -12,7 +12,7 @@
 
 Agent Skill Creator is a **meta-skill** -- a skill that creates other skills. Install it once, then talk to your agent naturally. Pass in workflow descriptions, documentation, links, existing code, API docs, compliance checklists — whatever you have. The skill creator processes all of it through a structured 5-phase pipeline and produces a complete, validated, security-scanned skill ready for your team to use.
 
-No CLI commands to learn. No templates to fill out. You describe what you need; the agent builds it; the toolchain verifies it.
+Once installed, type `/agent-skill-creator` followed by whatever you have — a workflow description, a link, existing code, a PDF. The agent builds the skill; the toolchain verifies it.
 
 **Input**: Documentation, links, code, process descriptions — anything that captures the workflow.
 **Output**: A ready-to-install skill directory with functional scripts, documentation, cross-platform installer, and spec-compliant SKILL.md — published to a shared catalog your team can browse and install from.
@@ -85,43 +85,33 @@ git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rule
 # Any other supported platform — see "Setup by Platform" below
 ```
 
-### Step 2: Talk to Your Agent
+### Step 2: Invoke the Skill Creator
 
-There's no CLI command to memorize. You just open your agent (Claude Code, Copilot, Cursor — whatever you installed it on) and describe what you need. The skill creator activates automatically when you talk about creating skills or automating workflows.
+Open your agent and type `/agent-skill-creator` followed by whatever you have. The more context you provide, the better the skill:
 
-You can provide **anything** as input — the more context, the better the skill:
-
-**Plain English workflow description:**
 ```
-"Every week I pull sales data from our CRM, clean duplicate entries,
-calculate regional totals, and generate a PDF report for leadership."
+/agent-skill-creator Every week I pull sales data from our CRM, clean
+duplicate entries, calculate regional totals, and generate a PDF report.
 ```
 
-**Documentation or internal wiki links:**
 ```
-"Create a skill based on our deployment runbook: https://wiki.internal/deploy-process
-It covers the pre-deploy checklist, canary rollout steps, and rollback procedures."
+/agent-skill-creator Based on our deployment runbook: https://wiki.internal/deploy-process
 ```
 
-**Existing code or scripts:**
 ```
-"I have this Python script that processes invoices (see scripts/invoice_processor.py).
-Turn it into a reusable skill that anyone on the team can use."
+/agent-skill-creator See scripts/invoice_processor.py — turn it into a reusable skill
 ```
 
-**API documentation:**
 ```
-"Here's our internal API docs for the inventory system: https://api.internal/docs
-Create a skill that lets agents query stock levels and generate reorder reports."
-```
-
-**Compliance or process documents:**
-```
-"Attached is our SOX compliance checklist (compliance-checklist.pdf).
-Create a skill that walks through each check and generates an audit trail."
+/agent-skill-creator Here's our API docs: https://api.internal/docs
+Create a skill that queries stock levels and generates reorder reports.
 ```
 
-You can combine all of these — paste links, reference files, describe the workflow in your own words. The agent reads everything and processes it through a structured 5-phase pipeline:
+```
+/agent-skill-creator Based on compliance-checklist.pdf, create a SOX audit skill
+```
+
+You can pass in plain English descriptions, documentation links, existing code, API docs, PDFs — anything. Combine multiple sources in one message. The agent reads everything and processes it through a structured 5-phase pipeline:
 
 ```
 DISCOVERY        → Researches the domain, reads your docs/links/code
@@ -259,10 +249,10 @@ git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git .cursor/rule
 After installing, open your agent and type:
 
 ```
-Create a skill for analyzing CSV files
+/agent-skill-creator Create a skill for analyzing CSV files
 ```
 
-The skill creator activates and walks you through the full pipeline.
+The skill creator activates and walks you through the full pipeline. You can also just describe a workflow naturally — the skill activates on phrases like "create a skill for...", "automate this workflow", etc.
 
 For Windsurf, Cline, Codex CLI, Gemini CLI, and other platforms see [Setup by Platform](#setup-by-platform-complete-guide) below.
 
@@ -270,19 +260,24 @@ For Windsurf, Cline, Codex CLI, Gemini CLI, and other platforms see [Setup by Pl
 
 ## Usage
 
-### Trigger Phrases
+### Invocation
 
-Say any of these to your agent:
+Type `/agent-skill-creator` followed by your input:
 
 ```
-"Create a skill for analyzing stock market data"
-"Every day I process CSV files manually, automate this"
-"Create a cross-platform skill for weather alerts"
-"Automate this workflow"
-"I need to automate [repetitive task]"
-"Validate this skill"
-"Export this skill for Cursor and Copilot"
-"Migrate this skill to v4"
+/agent-skill-creator Create a skill for analyzing stock market data
+/agent-skill-creator Every day I process CSV files manually, automate this
+/agent-skill-creator https://wiki.internal/weather-api-docs
+/agent-skill-creator See scripts/data_pipeline.py — make this a reusable skill
+```
+
+The skill also activates on natural language without the prefix:
+
+```
+Create a skill for weather alerts
+Automate this workflow
+Validate this skill
+Export this skill for Cursor
 ```
 
 ### What Happens
@@ -567,22 +562,16 @@ This section provides structured metadata for AI agents ingesting this README as
 ### Activation Triggers
 
 ```
-create an agent for [objective]
+# Primary invocation
+/agent-skill-creator <description, links, code, docs>
+
+# Natural language (also works)
 create a skill for [domain]
-develop a custom skill
 automate this workflow
 every day I [task]
-I repeatedly need to [process]
 I need to automate [task]
-create a cross-platform skill for [objective]
 validate this skill
-check if this skill is spec-compliant
 export this skill for [platform]
-package this skill for [platform]
-migrate this skill to v4
-update this skill to the new standard
-create a multi-agent suite for [objective]
-create a skill from the [name] template
 ```
 
 ### Install Commands

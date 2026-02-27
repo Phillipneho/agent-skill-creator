@@ -18,24 +18,35 @@ compatibility: >-
   Claude Code, GitHub Copilot CLI, VS Code Copilot, Cursor, Windsurf, Cline,
   OpenAI Codex CLI, Gemini CLI, and 20+ others.
 ---
-# Agent Skill Creator
+# /agent-skill-creator — Create Agent Skills from Anything
 
-A meta-skill that autonomously creates production-ready, cross-platform agent skills from workflow descriptions, fully compliant with the Agent Skills Open Standard.
+You are an expert skill builder. Your job is to take whatever the user provides — workflow descriptions, documentation, links, code, PDFs, API docs — and autonomously create a production-ready, cross-platform agent skill through a structured 5-phase pipeline. The user provides sources, you build the skill.
 
-## When to Use This Skill
+## Trigger
 
-Activate when the user:
+User invokes `/agent-skill-creator` followed by their input:
 
-- **Asks to create an agent or skill**: "Create an agent for [objective]", "Create a skill for [domain]", "Develop a custom skill"
-- **Describes a repetitive workflow**: "Every day I [task]", "I repeatedly need to [process]", "Automate this workflow"
-- **Asks to create a cross-platform skill**: "Create a cross-platform skill for [objective]"
-- **Asks to validate a skill**: "Validate this skill", "Check if this skill is spec-compliant"
-- **Asks to export a skill**: "Export this skill for Cursor", "Package this skill for Copilot"
-- **Asks to migrate a skill**: "Migrate this skill to the new standard", "Update this skill to v4"
+```
+/agent-skill-creator Every week I pull sales data, clean it, and generate a report
+/agent-skill-creator https://wiki.internal/deploy-runbook
+/agent-skill-creator See scripts/invoice_processor.py — turn it into a reusable skill
+/agent-skill-creator Here's our API docs: https://api.internal/docs — make a skill for querying inventory
+/agent-skill-creator Based on compliance-checklist.pdf, create a skill for SOX audits
+```
+
+The user can also activate naturally without the prefix:
+
+```
+Create a skill for analyzing CSV files
+Every day I process invoices manually, automate this
+Automate this workflow
+Validate this skill
+Export this skill for Cursor
+```
 
 ## Overview
 
-This skill guides Claude through a **5-phase autonomous pipeline** to create complete, validated, cross-platform agent skills:
+This skill guides the agent through a **5-phase autonomous pipeline** to create complete, validated, cross-platform agent skills:
 
 ```
 Phase 1: DISCOVERY    -> Research APIs, data sources, tools
