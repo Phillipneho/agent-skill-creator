@@ -77,17 +77,19 @@ Phase 5: IMPLEMENTATION  Create all files, validate, security scan, deliver
 
 The human removes the cognitive constraint by providing the raw material. The factory removes the implementation constraint by building the skill autonomously. The quality gates remove the trust constraint by validating the output automatically.
 
-**Output**: A complete skill directory ready to install on any platform:
+**Output**: A self-contained skill that is installed and invoked the same way as agent-skill-creator itself:
 
 ```
 skill-name/
-├── SKILL.md          # <500 lines, spec-compliant frontmatter
-├── scripts/          # Functional Python code
+├── SKILL.md          # Starts with "# /skill-name" — the invocation trigger
+├── scripts/          # Functional Python code (no placeholders)
 ├── references/       # Detailed documentation (loaded on demand)
 ├── assets/           # Templates, schemas, data files
 ├── install.sh        # Cross-platform auto-detect installer
 └── README.md         # Multi-platform installation instructions
 ```
+
+Once installed, anyone on any platform types `/skill-name` and the skill activates — exactly like `/agent-skill-creator` or `/clarity`. The generated skill is a first-class citizen, not a second-class output.
 
 ## Core Workflow
 
@@ -125,21 +127,23 @@ See `references/pipeline-phases.md` for detailed Phase 4 instructions.
 Create all files in this order:
 
 1. Create directory structure
-2. Write **SKILL.md** with spec-compliant frontmatter (primary file)
-3. Implement Python scripts (functional, no placeholders)
-4. Write references (detailed documentation)
+2. Write **SKILL.md** — starts with `# /skill-name`, includes trigger section with invocation examples, spec-compliant frontmatter
+3. Implement Python scripts (functional, no placeholders, no TODOs)
+4. Write references (detailed documentation the skill loads on demand)
 5. Write assets (templates, configs)
 6. Generate `install.sh` (cross-platform installer)
-7. Write `README.md` (multi-platform install instructions)
+7. Write `README.md` (multi-platform install instructions showing `git clone` for each platform)
 8. Run **validation** against the official spec
 9. Run **security scan** for hardcoded keys and injection patterns
 10. Report results to user
+
+The generated skill must be a self-contained package that anyone can install with `git clone` and invoke with `/skill-name` — the same way agent-skill-creator itself works.
 
 See `references/pipeline-phases.md` for detailed Phase 5 instructions.
 
 ### Generated SKILL.md Format
 
-Every generated skill's SKILL.md must have:
+Every generated skill's SKILL.md must follow this structure:
 
 ```yaml
 ---
@@ -151,9 +155,22 @@ metadata:
   author: Author Name
   version: 1.0.0
 ---
+# /skill-name — Short Description
+
+You are an expert [domain]. Your job is to [what the skill does].
+
+## Trigger
+
+User invokes `/skill-name` followed by their input:
+
+[examples of invocation]
+
+## [Rest of skill body — workflow, instructions, references]
 ```
 
-Body must be <500 lines. Move detailed content to `references/`.
+The SKILL.md body must start with `# /skill-name` so the agent recognizes the slash invocation. The body must be <500 lines. Move detailed content to `references/`.
+
+**Critical**: Every skill the factory produces must be invocable with `/skill-name` on any platform. The generated skill is software that gets installed and used — not a document to read.
 
 ## Architecture Decision
 

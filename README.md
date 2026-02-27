@@ -188,13 +188,15 @@ python3 scripts/skill_registry.py install sales-report-builder
 
 ### Step 6: Use the Skill
 
-After installing, the skill activates automatically. The colleague just opens their agent and says:
+After installing, the colleague opens their agent and types:
 
 ```
-"Generate the weekly sales report for the West region"
+/sales-report-builder Generate the weekly report for the West region
 ```
 
-The agent recognizes this matches the sales-report-builder skill and executes the workflow — pulling data, cleaning it, calculating totals, and generating the PDF. Same process, same quality, every time.
+The skill activates — just like `/agent-skill-creator` or `/clarity` — and executes the workflow: pulling data, cleaning it, calculating totals, generating the PDF. Same process, same quality, every time, on any platform.
+
+Every skill the factory produces is a first-class citizen: installed with `git clone`, invoked with `/skill-name`, self-contained with its own scripts, references, and documentation.
 
 ### Step 7: Iterate
 
