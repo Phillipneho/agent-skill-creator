@@ -1,0 +1,694 @@
+Simulated Interaction: VS Code Copilot + agent-skill-creator
+=============================================================
+
+---
+
+Setup (one time, already done)
+
+  git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
+
+VS Code Copilot finds it at ~/.claude/skills/ automatically.
+
+---
+
+The Interaction
+
+The user opens VS Code, opens Copilot Chat (Agent mode), and types:
+
+User: /agent-skill-creator Every month I pull customer churn data from our Stripe API and Mixpanel, segment customers by plan tier and usage drop-off, calculate churn risk scores, and generate a PDF report for the leadership team. Here's our current script: scripts/churn_analysis.py
+
+Copilot (loading agent-skill-creator skill):
+
+  I'll build a complete agent skill from your churn analysis workflow. Let me start by reading your existing script and understanding the full picture.
+
+  Reading scripts/churn_analysis.py...
+
+  I can see this pulls from Stripe's subscription API and Mixpanel's engagement endpoint, segments by 3 plan tiers, and uses a weighted scoring model. Let me uncover the implicit requirements before building.
+
+  Implicit requirements I've identified:
+  - Error handling when Stripe/Mixpanel APIs are unreachable
+  - Date range defaults (last 30 days) vs custom ranges
+  - The PDF needs the Acme Corp header and formatting your leadership team expects
+  - Churn risk thresholds (>0.7 = high, >0.4 = medium) are hardcoded — should be configurable
+  - No handling for new customers with insufficient data
+
+  Building the skill now...
+
+  (Copilot creates the full skill directory)
+
+  customer-churn-skill/
+  ├── SKILL.md                 # Activation: /customer-churn-skill
+  ├── scripts/
+  │   ├── churn_analysis.py    # Core analysis (refactored from your script)
+  │   ├── stripe_connector.py  # Stripe API integration
+  │   ├── mixpanel_connector.py # Mixpanel API integration
+  │   └── pdf_report.py        # PDF generation with formatting
+  ├── references/
+  │   ├── scoring-model.md     # Churn risk scoring methodology
+  │   ├── api-endpoints.md     # Stripe + Mixpanel endpoint docs
+  │   └── report-format.md     # PDF layout specification
+  ├── assets/
+  │   └── report_template.html # PDF template
+  ├── install.sh               # Cross-platform installer (14 tools)
+  └── README.md                # Installation instructions
+
+  Validation results:
+  - Spec compliance: PASSED (frontmatter, naming, structure, references)
+  - Security scan: PASSED (no hardcoded API keys, credentials use environment variables)
+
+  Installed at: ~/.claude/skills/customer-churn-skill
+
+  To use it, start a new chat and type:
+    /customer-churn-skill Generate the monthly churn report for March
+
+  Or with custom parameters:
+    /customer-churn-skill Analyze churn for Enterprise tier only, last 90 days
+
+  Want to share this skill with your team so they can install it too?
+
+---
+
+User: Yes, we use GitHub
+
+Copilot:
+
+  Setting up sharing...
+
+  cd customer-churn-skill
+  git init
+  git add -A
+  git commit -m "feat: Initial skill — customer-churn-skill"
+  gh repo create customer-churn-skill --private --source=. --push
+
+  Done! Share this with your team:
+
+  # For VS Code Copilot / Claude Code:
+  git clone https://github.com/your-org/customer-churn-skill.git ~/.claude/skills/customer-churn-skill
+
+  # For Codex CLI / Gemini CLI / Kiro:
+  git clone https://github.com/your-org/customer-churn-skill.git ~/.agents/skills/customer-churn-skill
+
+  # For Cursor (per-project):
+  git clone https://github.com/your-org/customer-churn-skill.git .cursor/rules/customer-churn-skill
+
+  # Or install everywhere at once:
+  npx skills add your-org/customer-churn-skill
+
+  Your colleagues paste one line, and they can type /customer-churn-skill in their agent.
+
+---
+
+Later that week — a colleague uses it
+
+The colleague cloned it. They open VS Code Copilot and type:
+
+Colleague: /customer-churn-skill Which Enterprise customers are highest churn risk this month? Include a breakdown by usage drop-off category.
+
+Copilot (loading customer-churn-skill):
+
+  Running churn analysis for Enterprise tier, March 2026...
+
+  Connecting to Stripe API... (uses STRIPE_API_KEY from env)
+  Connecting to Mixpanel... (uses MIXPANEL_TOKEN from env)
+
+  Enterprise Churn Risk Report — March 2026
+
+  | Customer      | Plan            | Risk Score | Drop-off Category   | MRR     |
+  |---------------|-----------------|------------|---------------------|---------|
+  | Acme Corp     | Enterprise Plus | 0.89       | Feature abandonment | $12,400 |
+  | DataFlow Inc  | Enterprise      | 0.76       | Login frequency     | $8,200  |
+  | NorthStar Ltd | Enterprise      | 0.72       | Support escalation  | $6,800  |
+  | ...           |                 |            |                     |         |
+
+  7 Enterprise accounts flagged as high-risk ($94,200 combined MRR at risk).
+
+  PDF report generated at ./reports/churn-enterprise-2026-03.pdf.
+  Want me to email this to the leadership distribution list?
+
+---
+
+Key difference from raw Copilot
+
+Without the skill, the colleague would have had to explain: which APIs, which endpoints, what scoring model, what PDF format, what "churn risk" means in their org. With the skill installed, they just say what they want and it already knows all of that.
+
+
+=============================================================
+AGRICULTURE COMMODITY RESEARCH TEAM — FULL SCENARIO
+=============================================================
+
+Context: A 6-person ag commodity research team at a trading firm. They cover soybeans, corn, wheat, and coffee. Every analyst repeats the same data-pulling, report-building, and market-monitoring workflows daily. The team lead decides to turn these into shared skills.
+
+
+=============================================================
+SKILL 1: WASDE Report Analyzer
+=============================================================
+
+The senior grain analyst opens VS Code Copilot:
+
+User: /agent-skill-creator Every month when USDA releases the WASDE report, I download the PDF from usda.gov, extract the supply and demand tables for corn, soybeans, and wheat, compare the new estimates against last month and against the market consensus (which I pull from a Bloomberg terminal CSV export), flag any revisions greater than 2%, and write a 2-page brief for the trading desk with a "surprise score" for each commodity. Here's last month's brief as an example: references/wasde-brief-feb-2026.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  I'll build a skill from your WASDE analysis workflow. Let me read your example brief first.
+
+  Reading references/wasde-brief-feb-2026.pdf...
+
+  I can see the structure: header with release date and report number, a table per commodity showing Old USDA / New USDA / Consensus / Surprise, then a narrative section interpreting the numbers for the trading desk. Let me identify implicit requirements.
+
+  Implicit requirements I've identified:
+  - WASDE PDF table extraction needs to handle USDA's inconsistent formatting across years
+  - "Consensus" comes from a Bloomberg CSV export — need to define the expected column format
+  - Surprise score formula: |(New USDA - Consensus)| / Consensus * 100, flagged if > 2%
+  - The brief must separate US domestic vs world balance sheets
+  - Ending stocks and stocks-to-use ratio are the key numbers the desk cares about
+  - Historical comparison should include the 5-year average, not just last month
+  - Wheat needs to be split: all wheat, HRW, SRW, HRS separately
+  - The desk wants this within 30 minutes of USDA release — speed matters
+
+  Building the skill now...
+
+  wasde-analyzer-skill/
+  ├── SKILL.md                    # Activation: /wasde-analyzer-skill
+  ├── scripts/
+  │   ├── wasde_parser.py         # USDA PDF table extraction
+  │   ├── consensus_loader.py     # Bloomberg CSV import + validation
+  │   ├── surprise_calculator.py  # Surprise score engine
+  │   ├── brief_generator.py      # 2-page PDF brief builder
+  │   └── historical_compare.py   # 5-year avg + month-over-month
+  ├── references/
+  │   ├── wasde-table-format.md   # USDA table layout documentation
+  │   ├── commodity-codes.md      # USDA commodity ID mappings
+  │   ├── surprise-methodology.md # Surprise score formula + thresholds
+  │   └── brief-template.md       # Trading desk brief structure
+  ├── assets/
+  │   ├── brief_template.html     # PDF template with firm header
+  │   └── sample_consensus.csv    # Expected Bloomberg export format
+  ├── install.sh                  # Cross-platform installer (14 tools)
+  └── README.md
+
+  Validation: PASSED | Security: PASSED
+  Installed at: ~/.claude/skills/wasde-analyzer-skill
+
+  To use it:
+    /wasde-analyzer-skill Analyze the March 2026 WASDE, consensus file at data/bloomberg-consensus-mar26.csv
+
+  Want to share this with your team?
+
+User: Yes
+
+Copilot:
+
+  gh repo create acme-trading/wasde-analyzer-skill --private --source=. --push
+
+  Share with your team:
+    git clone https://github.com/acme-trading/wasde-analyzer-skill.git ~/.claude/skills/wasde-analyzer-skill
+
+
+--- On WASDE release day, a junior analyst uses it ---
+
+Junior Analyst: /wasde-analyzer-skill WASDE just dropped. Consensus file is at data/bloomberg-mar26.csv. Run the full analysis for corn, soybeans, and wheat.
+
+Copilot (loading wasde-analyzer-skill):
+
+  Downloading March 2026 WASDE from USDA...
+  Extracting supply/demand tables...
+  Loading consensus from data/bloomberg-mar26.csv...
+  Calculating surprise scores...
+
+  WASDE SURPRISE BRIEF — March 11, 2026
+
+  CORN (US)
+  | Metric              | Feb USDA | Mar USDA | Consensus | Surprise |
+  |---------------------|----------|----------|-----------|----------|
+  | Production (mil bu) | 15,143   | 15,143   | 15,143    | 0.0%     |
+  | Ending Stocks       | 1,540    | 1,490    | 1,525     | -2.3%  * |
+  | Stocks/Use          | 10.4%    | 10.1%    | 10.3%     |          |
+
+  * BULLISH SURPRISE: USDA cut corn ending stocks 50 mil bu below consensus.
+    Driven by higher ethanol demand estimate (+25 mil bu) and feed/residual
+    revision. This is the tightest S/U ratio since 2023/24.
+
+  SOYBEANS (US)
+  | Metric              | Feb USDA | Mar USDA | Consensus | Surprise |
+  |---------------------|----------|----------|-----------|----------|
+  | Production (mil bu) | 4,366    | 4,366    | 4,366     | 0.0%     |
+  | Ending Stocks       | 380      | 370      | 385       | -3.9%  * |
+  | Stocks/Use          | 8.6%     | 8.4%     | 8.7%      |          |
+
+  * BULLISH SURPRISE: Crush raised 15 mil bu, exports raised 10 mil bu.
+    Brazil's crop estimate unchanged at 169 MMT — market expected a cut.
+
+  WHEAT (ALL — US)
+  | Metric              | Feb USDA | Mar USDA | Consensus | Surprise |
+  |---------------------|----------|----------|-----------|----------|
+  | Ending Stocks       | 794      | 798      | 790       | +1.0%    |
+
+  No surprise. Wheat largely unchanged. HRW stocks marginally higher on
+  lower food use estimate.
+
+  OVERALL SURPRISE SCORE: 6.2 / 10 (Moderately bullish grains)
+
+  PDF brief generated: reports/wasde-brief-2026-03-11.pdf
+
+  Key takeaway for the desk: Corn and beans both tighter than expected.
+  The corn stocks cut is the headline — first sub-1,500 ending stocks
+  estimate this marketing year. Watch the May corn contract for a gap
+  higher on the open.
+
+  Want me to email this to the trading desk distribution list?
+
+
+=============================================================
+SKILL 2: Crop Condition & Weather Monitor
+=============================================================
+
+The weather/crop analyst on the team creates another skill:
+
+User: /agent-skill-creator Every Monday during growing season (April-October) I check the USDA Crop Progress report for corn and soybean condition ratings, compare good/excellent percentages against the 5-year average and last year, pull 7-day and 14-day weather forecasts from NOAA for the Corn Belt states (Iowa, Illinois, Indiana, Minnesota, Nebraska, Ohio), check soil moisture from the US Drought Monitor, and write a "Crop & Weather Weekly" for our research clients. I also maintain a chart tracking the condition index through the season. Here are my notes on how I calculate the crop condition index: references/condition-index-formula.txt
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/condition-index-formula.txt...
+
+  I see — you use the Brugler weighted index: (Very Poor * 1 + Poor * 2 + Fair * 3 + Good * 4 + Excellent * 5) / 5. This gives a single score out of 100. Let me build this.
+
+  Implicit requirements I've identified:
+  - Crop Progress data comes from USDA NASS Quick Stats API
+  - NOAA forecast needs to cover precipitation AND temperature (GDD accumulation)
+  - Drought Monitor categories: D0-D4 mapped to severity scores
+  - Growing Degree Days (GDD) tracking: base 50F for corn, base 50F for soybeans
+  - Client report needs both narrative + embedded charts (condition index trend, precip map)
+  - State-level breakdown matters — an Iowa drought doesn't offset Illinois rain
+  - The weekly cadence means the skill should know what "week" of the growing season it is
+  - Planting progress in April-May, then shifts to condition ratings June-October
+
+  Building...
+
+  crop-weather-weekly-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── crop_progress.py        # USDA NASS API — condition ratings + planting progress
+  │   ├── weather_forecast.py     # NOAA 7/14-day forecast by state
+  │   ├── drought_monitor.py      # US Drought Monitor data pull
+  │   ├── condition_index.py      # Brugler weighted index calculator
+  │   ├── gdd_tracker.py          # Growing degree day accumulation
+  │   ├── charts.py               # Condition trend + precip charts
+  │   └── weekly_report.py        # PDF/HTML report builder
+  ├── references/
+  │   ├── corn-belt-states.md     # State FIPS codes, county groupings
+  │   ├── condition-methodology.md # Index formula, historical baselines
+  │   ├── gdd-requirements.md     # GDD targets by growth stage
+  │   └── client-report-format.md # Report layout spec
+  ├── assets/
+  │   └── report_template.html
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED | Security: PASSED
+  Installed at: ~/.claude/skills/crop-weather-weekly-skill
+
+  Share with your team?
+
+User: Yes, same GitHub org
+
+Copilot:
+
+  gh repo create acme-trading/crop-weather-weekly-skill --private --source=. --push
+
+  Done! Your team:
+    git clone https://github.com/acme-trading/crop-weather-weekly-skill.git ~/.claude/skills/crop-weather-weekly-skill
+
+
+--- Monday morning during growing season ---
+
+Analyst: /crop-weather-weekly-skill Generate the Crop & Weather Weekly for the week of July 14, 2026. Focus on the drought situation in western Iowa and Nebraska.
+
+Copilot (loading crop-weather-weekly-skill):
+
+  Pulling USDA Crop Progress (released 4:00pm ET yesterday)...
+  Pulling NOAA 7-day and 14-day forecasts for Corn Belt...
+  Pulling US Drought Monitor (updated Thursday)...
+  Calculating condition indices...
+
+  CROP & WEATHER WEEKLY — July 14, 2026
+
+  CORN CONDITION
+  | State     | G/E This Week | G/E Last Week | G/E 5yr Avg | Condition Index |
+  |-----------|---------------|---------------|-------------|-----------------|
+  | Iowa      | 54%           | 61%           | 68%         | 322 (below avg) |
+  | Illinois  | 71%           | 70%           | 66%         | 361 (above avg) |
+  | Indiana   | 68%           | 67%           | 63%         | 355 (above avg) |
+  | Minnesota | 63%           | 64%           | 65%         | 345 (at avg)    |
+  | Nebraska  | 48%           | 55%           | 62%         | 308 (well below)|
+  | Ohio      | 72%           | 71%           | 64%         | 362 (above avg) |
+  | NATIONAL  | 62%           | 64%           | 65%         | 344             |
+
+  Week-over-week: National corn conditions slipped 2 points. The decline is
+  concentrated in the western Corn Belt — Iowa dropped 7 points and Nebraska
+  dropped 7 points. Eastern Belt is steady to improving.
+
+  DROUGHT SITUATION
+  Western Iowa: 43% of the state now in D2 (severe drought), up from 31%
+  last week. The I-80 corridor west of Des Moines through Council Bluffs is
+  the epicenter. Subsoil moisture rated 62% short/very short.
+
+  Nebraska: 51% in D1 or worse. The Platte River valley from Grand Island
+  to North Platte hasn't received meaningful rain in 23 days. Center-pivot
+  irrigation is running but aquifer draw-down is being reported.
+
+  WEATHER OUTLOOK
+  7-day: A ridge holds over the western Plains through Thursday. Temps
+  100-105F in western Iowa/Nebraska. No significant precip until a cold
+  front arrives Saturday with scattered storms (0.25-0.75 inches, not
+  drought-breaking).
+
+  14-day: GFS and Euro diverge after day 8. Euro shows the ridge breaking
+  down with a pattern change toward more active weather. GFS keeps the
+  ridge. If the Euro verifies, meaningful relief arrives July 25-28.
+
+  GDD ACCUMULATION (corn, base 50F, since April 15)
+  | State     | Actual GDD | Normal GDD | Deviation |
+  |-----------|------------|------------|-----------|
+  | Iowa      | 1,842      | 1,710      | +132 (ahead — heat stress risk) |
+  | Illinois  | 1,920      | 1,805      | +115      |
+  | Nebraska  | 1,780      | 1,690      | +90       |
+
+  KEY TAKEAWAY: Western Corn Belt stress is accelerating during pollination
+  week for early-planted corn in Iowa and Nebraska. If the Euro's pattern
+  change doesn't verify, we could see another 3-5 point condition drop
+  next week. The east is fine. This is a "tale of two Corn Belts" story.
+
+  National corn condition index at 344 is the lowest for this week since
+  2022 (338) but well above 2012 drought (278).
+
+  [Condition Index Trend Chart embedded — shows 2026 line dipping below
+  5yr avg band, with 2012 and 2022 comparison lines]
+
+  PDF report generated: reports/crop-weather-weekly-2026-07-14.pdf
+
+  Want me to email this to the client distribution list?
+
+
+=============================================================
+SKILL 3: Basis Tracker & Export Monitor
+=============================================================
+
+The logistics/basis analyst creates a third skill:
+
+User: /agent-skill-creator I track soybean and corn basis at 12 river elevators along the Mississippi and Illinois rivers. Every day I pull bids from DTN/Progressive Farmer, calculate basis vs the nearby CBOT futures contract, compare to the 3-year seasonal average, and flag any locations where basis moved more than 5 cents in a day. I also pull weekly USDA Export Inspections and Export Sales data to see if physical demand explains the basis moves. On Fridays I write a "Basis & Exports Weekly" for the team. Here's my spreadsheet with the 12 elevator locations and their historical basis patterns: data/elevator-basis-history.xlsx
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading data/elevator-basis-history.xlsx...
+
+  I see 12 elevators: Davenport IA, Muscatine IA, Burlington IA, Quincy IL, Beardstown IL, Havana IL, Peoria IL, Henry IL, Peru IL, St. Louis MO, Memphis TN, New Orleans LA (CIF Gulf). Each has daily basis history back to 2023. Let me build this.
+
+  Implicit requirements:
+  - "Nearby futures" rolls on first notice day — need a roll calendar
+  - Gulf basis (CIF NOLA) is the anchor — interior basis derives from it
+  - Barge freight rates affect interior basis — need to track St. Louis-Gulf freight
+  - Export Inspections = actual loadings (weekly, lagged). Export Sales = commitments (weekly, Thursday release)
+  - China/unknown destinations buying pattern is the key signal in export data
+  - Basis inversions between elevator locations signal logistical bottlenecks
+  - Harvest basis (Sep-Nov) behaves completely differently than non-harvest — seasonal model must account for this
+
+  Building...
+
+  basis-export-tracker-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── basis_scraper.py        # DTN bid scraping for 12 elevators
+  │   ├── futures_reference.py    # CBOT nearby contract + roll calendar
+  │   ├── basis_calculator.py     # Basis computation + 3yr seasonal avg
+  │   ├── alert_engine.py         # 5-cent daily move alerts
+  │   ├── export_inspections.py   # USDA weekly export inspections
+  │   ├── export_sales.py         # USDA weekly export sales
+  │   ├── barge_freight.py        # St. Louis-Gulf freight rates
+  │   └── weekly_report.py        # Friday summary builder
+  ├── references/
+  │   ├── elevator-locations.md   # 12 locations, river mile markers, capacity
+  │   ├── roll-calendar.md        # CBOT futures roll schedule
+  │   ├── seasonal-patterns.md    # Basis seasonality by location
+  │   └── export-data-sources.md  # USDA FAS endpoints
+  ├── assets/
+  │   └── elevator_locations.json # Lat/long + DTN bid codes
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED | Security: PASSED
+  Installed at: ~/.claude/skills/basis-export-tracker-skill
+
+  Shared to: github.com/acme-trading/basis-export-tracker-skill
+
+
+--- Daily use by the team ---
+
+Trader: /basis-export-tracker-skill What happened to corn basis at the river yesterday? I saw Gulf bids jumped.
+
+Copilot (loading basis-export-tracker-skill):
+
+  Pulling yesterday's bids (March 3, 2026)...
+
+  CORN BASIS DAILY SNAPSHOT — March 3, 2026 (vs May 2026 CBOT)
+
+  | Location       | Bid     | Basis  | Prev   | Change | 3yr Avg | vs Avg  |
+  |----------------|---------|--------|--------|--------|---------|---------|
+  | CIF NOLA       | $4.82   | +38    | +30    | +8   * | +22     | +16     |
+  | Memphis        | $4.58   | +14    | +10    | +4     | +5      | +9      |
+  | St. Louis      | $4.49   | +5     | +2     | +3     | -8      | +13     |
+  | Peoria IL      | $4.34   | -10    | -13    | +3     | -18     | +8      |
+  | Davenport IA   | $4.27   | -17    | -19    | +2     | -25     | +8      |
+  | ...            |         |        |        |        |         |         |
+
+  * ALERT: CIF Gulf corn jumped 8 cents. Largest single-day move since Jan 14.
+
+  WHAT'S DRIVING IT:
+  - USDA Export Sales (released Thursday): Net new corn sales of 1.82 MMT,
+    highest weekly total this marketing year. Unknown destinations (likely China)
+    booked 680,000 MT.
+  - Export Inspections (Monday): 1.24 MMT inspected for export, above the
+    pace needed to hit the USDA full-year estimate.
+  - Barge freight: St. Louis-Gulf up $0.45/ton this week. Low water on the
+    lower Mississippi near Greenville MS is creating delays — 48hr average
+    transit time now vs 36hr normal.
+
+  INTERPRETATION: Physical demand is pulling basis higher from the Gulf
+  upriver. The strength is real (export-driven) not just logistical. If
+  China continues buying at this pace, Gulf basis could push to +45/+50
+  which would pull interior basis another 5-8 cents higher.
+
+
+--- Friday weekly report ---
+
+Analyst: /basis-export-tracker-skill Generate the Basis & Exports Weekly.
+
+Copilot:
+
+  Compiling week of Feb 28 - Mar 4, 2026...
+
+  BASIS & EXPORTS WEEKLY — March 4, 2026
+
+  HEADLINE: Gulf corn basis rallied 12 cents this week on Chinese buying.
+  Interior locations followed, with the entire river system firming 3-8 cents.
+  Soybean basis was quiet — Gulf steady at +58, interior unchanged.
+
+  CORN BASIS — WEEK OVER WEEK
+  [Table showing all 12 locations, weekly change, distance from seasonal avg]
+
+  The entire Mississippi River corn basis curve steepened this week.
+  Gulf-to-Davenport spread widened to 55 cents (vs 47 cents 3yr avg for
+  this week). This signals strong export pull but also tight barge
+  logistics. Barge freight at $14.20/ton is 18% above seasonal average.
+
+  EXPORT SCOREBOARD
+  | Commodity | Sales This Week | Cumulative | USDA Target | Pace   |
+  |-----------|-----------------|------------|-------------|--------|
+  | Corn      | 1.82 MMT        | 42.1 MMT   | 58.4 MMT    | 104%   |
+  | Soybeans  | 0.44 MMT        | 39.8 MMT   | 49.7 MMT    | 98%    |
+
+  Corn export pace is now 4% ahead of the USDA projection. If this
+  continues, the April WASDE will likely raise the export estimate by
+  50-75 mil bu, tightening ending stocks further.
+
+  TOP BUYERS THIS WEEK (CORN)
+  | Destination        | Volume    | Notes                     |
+  |--------------------|-----------|---------------------------|
+  | Unknown (China)    | 680,000 MT| 3rd consecutive large week |
+  | Mexico             | 412,000 MT| Steady, as expected        |
+  | Japan              | 289,000 MT| Normal pace                |
+  | Colombia           | 145,000 MT| Above average              |
+
+  PDF report generated: reports/basis-exports-weekly-2026-03-04.pdf
+
+
+=============================================================
+SKILL 4: Coffee Fundamental Monitor
+=============================================================
+
+The soft commodities analyst covers coffee:
+
+User: /agent-skill-creator I monitor the global coffee market — arabica and robusta. Every week I check Brazil's CEPEA daily prices, pull ICE certified stock reports for arabica (from ICE exchange data), check Vietnam and Brazil export data from their customs agencies, track the CFTC Commitment of Traders for managed money positioning in KC coffee futures, and monitor weather in Minas Gerais (Brazil), Espirito Santo (Brazil), and the Central Highlands (Vietnam). I also watch the arabica/robusta spread because it signals substitution pressure. When frost risk hits Brazil's coffee belt in June-August, I need to be able to quickly assess the threat. Here's my methodology doc: references/coffee-research-methodology.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/coffee-research-methodology.pdf (12 pages)...
+
+  Comprehensive framework. I see your frost risk model uses elevation bands in Minas Gerais (areas above 900m are safe, below 700m are high risk), historical frost dates, and ECMWF ensemble forecasts for minimum temperatures. Let me build this.
+
+  Implicit requirements:
+  - CEPEA prices are in BRL/bag — need USD conversion using BCB exchange rate API
+  - ICE certified stocks distinguish between pending grading, passed, and failed
+  - Brazil export data from CECAFE (monthly), Vietnam from customs (lagged 2-3 weeks)
+  - COT data: managed money net long/short as % of open interest is the key metric, not raw contracts
+  - Arabica/robusta spread: KC minus RC (converted to common units), watch for narrowing below historical range
+  - Frost: only matters June 15 - August 15, south of 22°S latitude, below 800m elevation
+  - The coffee marketing year is different (Jul-Jun for Brazil arabica, Oct-Sep for Vietnam robusta)
+  - Flowering season (Sep-Nov in Brazil) is the other critical weather window
+
+  Building...
+
+  coffee-fundamental-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── cepea_prices.py          # Brazil domestic price scraper
+  │   ├── ice_certified_stocks.py  # ICE arabica warehouse stocks
+  │   ├── brazil_exports.py        # CECAFE monthly export data
+  │   ├── vietnam_exports.py       # Vietnam customs export data
+  │   ├── cot_positioning.py       # CFTC COT managed money parser
+  │   ├── arb_rob_spread.py        # Arabica/robusta spread tracker
+  │   ├── frost_monitor.py         # ECMWF frost risk model
+  │   ├── brazil_weather.py        # Minas Gerais + Espirito Santo weather
+  │   ├── vietnam_weather.py       # Central Highlands weather
+  │   └── weekly_report.py         # Coffee Weekly builder
+  ├── references/
+  │   ├── frost-risk-model.md      # Elevation bands, historical frost events
+  │   ├── coffee-calendar.md       # Marketing years, flowering/harvest windows
+  │   ├── brazil-regions.md        # Minas Gerais sub-regions, elevation data
+  │   ├── data-sources.md          # All API endpoints and data lags
+  │   └── spread-methodology.md    # Arb/rob spread interpretation
+  ├── assets/
+  │   └── minas-gerais-elevations.geojson
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED | Security: PASSED
+  Installed at: ~/.claude/skills/coffee-fundamental-skill
+
+  Shared to: github.com/acme-trading/coffee-fundamental-skill
+
+
+--- Frost scare in July ---
+
+Coffee Analyst: /coffee-fundamental-skill Frost risk alert — GFS is showing a polar air mass pushing into Parana and southern Minas Gerais this weekend. Assess the threat to coffee.
+
+Copilot (loading coffee-fundamental-skill):
+
+  Pulling ECMWF and GFS ensemble forecasts for coffee belt...
+  Loading elevation data for Minas Gerais sub-regions...
+
+  FROST RISK ASSESSMENT — July 18, 2026
+
+  MODEL GUIDANCE (minimum temperature forecasts, Saturday morning July 20)
+
+  | Sub-region          | Elevation | GFS Min | ECMWF Min | Frost Risk |
+  |---------------------|-----------|---------|-----------|------------|
+  | Sul de Minas (<700m)| 650-700m  | -1°C    | +1°C      | HIGH       |
+  | Sul de Minas (>800m)| 800-1100m | +2°C    | +3°C      | LOW        |
+  | Cerrado Mineiro     | 800-1000m | +3°C    | +4°C      | MINIMAL    |
+  | Triângulo Mineiro   | 700-900m  | +1°C    | +3°C      | MODERATE   |
+  | Parana (north)      | 400-600m  | -3°C    | -1°C      | SEVERE     |
+  | Espirito Santo      | 500-700m  | +5°C    | +6°C      | NONE       |
+
+  THREAT ASSESSMENT:
+
+  Parana: SEVERE risk. But Parana is only ~5% of Brazil arabica production
+  (down from 25% in the 1990s — production shifted north after the 1994
+  frost). Impact would be limited to ~2-3 million bags maximum exposure.
+
+  Sul de Minas (low elevation): HIGH risk on GFS, moderate on ECMWF. This
+  is the critical area — Sul de Minas produces ~30% of Brazil's arabica.
+  However, the sub-700m low-elevation areas are a minority of production.
+  Most major farms are at 800-1100m where frost risk is low.
+
+  GFS vs ECMWF divergence: GFS is 2-3°C colder than ECMWF across all
+  regions. This matters. In the last 5 comparable events, ECMWF verified
+  closer to observed temps 4 out of 5 times.
+
+  HISTORICAL COMPARISON:
+  - July 2021 frost: Much more severe (widespread -3°C to -5°C across
+    Minas Gerais at all elevations). KC rallied 30% in 2 weeks.
+  - This event: More limited geographic scope. Closer to July 2023
+    scare that produced a 5% rally that fully reversed in 10 days.
+
+  MARKET POSITIONING:
+  Managed money is currently net long 42,300 contracts (68th percentile).
+  Not extreme — room for speculative buying on a frost headline.
+
+  ICE certified stocks: 812,000 bags, near 20-year lows. Low buffer =
+  larger price reaction to any supply shock.
+
+  BOTTOM LINE: This is a "watch closely but don't panic" event. The
+  probable impact is limited to low-elevation Parana and small pockets
+  of southern Minas Gerais. If ECMWF is right (+1°C in Sul de Minas),
+  this is a non-event. If GFS is right (-1°C), we're looking at
+  localized damage to 3-5% of the Brazil arabica crop.
+
+  Expect KC coffee to rally 3-5% on the headlines Friday/Monday regardless
+  of actual damage, given low certified stocks and the market's sensitivity
+  to anything frost-related after 2021.
+
+  Next update: I recommend re-running this Saturday when the 24-hour
+  forecast models converge.
+
+
+=============================================================
+THE TEAM'S SKILL LIBRARY — 3 MONTHS LATER
+=============================================================
+
+After 3 months, the 6-person team has built and shared these skills:
+
+  git clone .../wasde-analyzer-skill.git          # Senior grain analyst
+  git clone .../crop-weather-weekly-skill.git      # Weather/crop analyst
+  git clone .../basis-export-tracker-skill.git     # Logistics/basis analyst
+  git clone .../coffee-fundamental-skill.git       # Soft commodities analyst
+  git clone .../seasonal-spread-skill.git          # Quantitative analyst
+  git clone .../client-briefing-skill.git          # Research director
+
+Every analyst has all 6 skills installed. The new hire who joined last
+week cloned all 6 in 10 minutes and can now run any workflow the team
+does — with institutional knowledge embedded in the skills.
+
+The research director's /client-briefing-skill actually calls the other
+skills internally to compile the firm's weekly flagship report. Skills
+compose.
+
+What used to take each analyst 2-3 hours of manual data pulling and
+formatting now takes a single prompt. The team's output doubled. Their
+research clients can't tell the difference — the reports look the same,
+the analysis is the same. It's just faster, and the junior analyst can
+produce the same quality as the senior.
+
+That's the point: skills capture institutional knowledge so it doesn't
+walk out the door when someone leaves, and it doesn't take 6 months
+to transfer when someone new joins.
+
+
+=============================================================
+INSTALLING ALL TEAM SKILLS AT ONCE
+=============================================================
+
+New team member joins. The team lead sends them one message on Slack:
+
+  "Welcome! Run these to get all our research skills:"
+
+  curl -fsSL https://raw.githubusercontent.com/FrancyJGLisboa/agent-skill-creator/main/scripts/bootstrap.sh | sh
+
+  ./scripts/install-skill.sh https://github.com/acme-trading/wasde-analyzer-skill.git
+  ./scripts/install-skill.sh https://github.com/acme-trading/crop-weather-weekly-skill.git
+  ./scripts/install-skill.sh https://github.com/acme-trading/basis-export-tracker-skill.git
+  ./scripts/install-skill.sh https://github.com/acme-trading/coffee-fundamental-skill.git
+  ./scripts/install-skill.sh https://github.com/acme-trading/seasonal-spread-skill.git
+  ./scripts/install-skill.sh https://github.com/acme-trading/client-briefing-skill.git
+
+7 commands. 5 minutes. The new hire has the entire team's research
+infrastructure on their machine, across every AI tool they use.
