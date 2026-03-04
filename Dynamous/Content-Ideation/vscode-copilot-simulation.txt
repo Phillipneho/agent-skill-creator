@@ -1277,3 +1277,747 @@ Updated skill library after adding the data-platform skills:
 
   Total setup time: 15 minutes. Knowledge transfer time: zero.
   Everything the team knows is in the skills.
+
+
+=============================================================
+EXPANDED: OPEN-METEO PROFESSIONAL API SKILLS
+=============================================================
+
+The team also has an Open-Meteo professional plan:
+
+  OPEN_METEO_API_KEY  — Open-Meteo professional subscription. Unlocked:
+                        commercial use, higher rate limits, 80+ years of
+                        historical data, ensemble models (ECMWF 51-member,
+                        GFS 31-member), climate projections to 2050, soil
+                        moisture at 5 depths, soil temperature at 4 depths,
+                        ET0 evapotranspiration, GDD, and leaf wetness.
+                        Endpoints: api.open-meteo.com/v1/forecast,
+                        archive.open-meteo.com/v1/archive,
+                        ensemble-api.open-meteo.com/v1/ensemble,
+                        climate-api.open-meteo.com/v1/climate
+
+Open-Meteo is the weather backbone. It replaces the patchwork of NOAA,
+ECMWF direct, and national weather services the team was stitching
+together manually. One API, every variable, 80 years of history.
+
+
+=============================================================
+SKILL 8: Yield Predictor — Weather-Based Crop Yield Model
+=============================================================
+
+The quant analyst builds a yield regression model powered by weather:
+
+User: /agent-skill-creator I want to build a crop yield prediction model that uses weather data to estimate corn and soybean yields in the US Corn Belt BEFORE the USDA publishes their official estimate. The idea: USDA doesn't release their first survey-based yield estimate until August. But weather during the growing season is the #1 driver of yield — if I can quantify the weather impact, I can have a yield estimate weeks before USDA. My approach: pull 40 years of historical daily weather from Open-Meteo (temperature, precipitation, soil moisture, evapotranspiration) for the top 8 corn-producing states, calculate growing-season metrics (cumulative GDD, total precipitation, drought stress days, excess heat days above 95F during pollination), and run a regression against USDA's final yield for each year. Then apply the model to the current season's weather to get a real-time yield estimate that updates daily. Open-Meteo API key is in my env as OPEN_METEO_API_KEY. Here's my research paper on weather-yield relationships: references/weather-yield-regression.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/weather-yield-regression.pdf...
+
+  Your paper identifies six weather variables that explain 78% of US corn
+  yield variance: (1) cumulative GDD May-Sep, (2) July precipitation, (3)
+  July max temp during pollination, (4) August soil moisture 0-10cm, (5)
+  VPD during silking, and (6) June precipitation for root establishment.
+  Soybeans have a similar but shifted model — critical period is Aug-Sep
+  instead of Jul-Aug. Let me build this.
+
+  Implicit requirements:
+  - Open-Meteo Historical API (archive.open-meteo.com/v1/archive):
+    daily data from 1984-present, variables: temperature_2m_max,
+    temperature_2m_min, precipitation_sum, et0_fao_evapotranspiration,
+    soil_moisture_0_to_1cm through 9_to_27cm, vapour_pressure_deficit
+  - Open-Meteo Forecast API (api.open-meteo.com/v1/forecast): same
+    variables, 16-day forecast, for projecting the current season forward
+  - API key passed as &apikey= parameter (professional plan)
+  - Need lat/long centroids for each state's ag district — not state
+    capitals, but production-weighted centroids (e.g., central Iowa
+    cropland at ~42.0°N, 93.5°W, not Des Moines)
+  - GDD calculation: base 50°F (10°C), cap at 86°F (30°C) — the standard
+    corn GDD formula, not simple average
+  - "Drought stress days": soil_moisture_0_to_1cm < 0.15 m³/m³ during
+    Jun-Aug. Consecutive drought days matter more than scattered ones
+  - "Excess heat days": temperature_2m_max > 35°C during Jul 5-25
+    (pollination window for corn). Each excess heat day costs ~1-2 bu/ac
+  - USDA final yield data (NASS QuickStats) for training the regression
+  - Yield trend detrending: raw yields increase ~2 bu/ac/year due to
+    technology. Must detrend before regression to isolate weather effect
+  - The model should output: point estimate, confidence interval, and
+    comparison to USDA's latest estimate (when available)
+
+  Building...
+
+  yield-predictor-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── openmeteo_client.py       # Open-Meteo API wrapper (auth, batch queries,
+  │   │                             #   historical + forecast + archive endpoints)
+  │   ├── weather_metrics.py        # GDD, precip, drought days, excess heat, VPD,
+  │   │                             #   soil moisture — all derived metrics
+  │   ├── yield_regression.py       # Multi-variate regression (40yr training set)
+  │   ├── trend_detrend.py          # Technology trend removal + re-trending
+  │   ├── state_centroids.py        # Production-weighted lat/long by state
+  │   ├── realtime_estimator.py     # Current season: actuals + 16-day forecast
+  │   │                             #   extension + climatology for remainder
+  │   ├── confidence_interval.py    # Bootstrap CI from regression residuals
+  │   ├── usda_comparison.py        # Compare model vs USDA when available
+  │   └── report_builder.py         # Yield estimate report (PDF + charts)
+  ├── references/
+  │   ├── gdd-formula.md            # Corn/soy GDD calculation (base/cap)
+  │   ├── critical-periods.md       # Pollination, pod-fill, grain-fill windows
+  │   ├── yield-weather-lit.md      # Academic literature on weather-yield models
+  │   ├── state-centroids.md        # 8 states, ag district centroids
+  │   └── methodology.md            # Full regression methodology
+  ├── assets/
+  │   ├── centroids.json            # {state: {lat, lon, weight}}
+  │   ├── usda_historical_yields.csv  # 1984-2025 state yields from NASS
+  │   └── trained_model.json        # Serialized regression coefficients
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (OPEN_METEO_API_KEY read from env)
+  Installed at: ~/.claude/skills/yield-predictor-skill
+
+  Shared to: github.com/acme-trading/yield-predictor-skill
+
+
+--- Mid-July, the model starts getting interesting ---
+
+Quant Analyst: /yield-predictor-skill Run the yield model for US corn. Where are we at for 2026?
+
+Copilot (loading yield-predictor-skill):
+
+  Pulling Open-Meteo historical data for 2026 growing season (Apr 1 - today)...
+  Pulling 16-day forecast (Jul 15 - Jul 31)...
+  Filling Aug-Sep with 30-year climatology (weighted by current soil state)...
+  Running regression...
+
+  US CORN YIELD MODEL — July 15, 2026
+
+  WEATHER METRICS TO DATE (weighted across 8 states):
+
+  | Metric                        | 2026 Actual | 30yr Avg | Deviation     |
+  |-------------------------------|-------------|----------|---------------|
+  | Cumulative GDD (Apr 15-Jul 14)| 1,580       | 1,490    | +6.0% (warm)  |
+  | June precipitation (inches)   | 4.8         | 4.3      | +11.6% (wet)  |
+  | July precip to date (inches)  | 1.1         | 2.2      | -50.0% (dry!) |
+  | Drought stress days (Jun-Jul) | 8           | 4        | +4 days       |
+  | Excess heat days >95F         | 3           | 1.5      | +1.5 days     |
+  | Soil moisture 0-10cm (m³/m³)  | 0.18        | 0.24     | -25.0% (low)  |
+  | VPD avg Jul 1-14 (kPa)       | 1.82        | 1.35     | +34.8% (high) |
+
+  STATE-BY-STATE BREAKDOWN:
+
+  | State     | Model Yield | USDA Trend | Deviation | Key Driver           |
+  |-----------|-------------|------------|-----------|----------------------|
+  | Iowa      | 178 bu/ac   | 198 bu/ac  | -10.1%    | Jul drought + heat   |
+  | Illinois  | 196 bu/ac   | 202 bu/ac  | -3.0%     | Adequate Jun rain    |
+  | Indiana   | 189 bu/ac   | 194 bu/ac  | -2.6%     | Moderate stress      |
+  | Minnesota | 184 bu/ac   | 192 bu/ac  | -4.2%     | VPD stress, ok rain  |
+  | Nebraska  | 172 bu/ac   | 196 bu/ac  | -12.2%    | Severe Jul drought   |
+  | Ohio      | 192 bu/ac   | 190 bu/ac  | +1.1%     | Good conditions      |
+  | S. Dakota | 152 bu/ac   | 168 bu/ac  | -9.5%     | Drought + thin soils |
+  | Wisconsin | 176 bu/ac   | 182 bu/ac  | -3.3%     | Moderate             |
+
+  NATIONAL WEIGHTED ESTIMATE:
+
+    Model yield:       181.4 bu/ac
+    USDA trend yield:  194.0 bu/ac (technology trend)
+    Model vs trend:    -12.6 bu/ac (-6.5%)
+
+    90% confidence interval: 175 — 188 bu/ac
+
+  SCENARIO ANALYSIS (remainder of season):
+
+  | Scenario                         | Yield Est  | Probability |
+  |----------------------------------|------------|-------------|
+  | Drought breaks by Jul 25 (rain)  | 188 bu/ac  | 35%         |
+  | Current pattern continues        | 181 bu/ac  | 45%         |
+  | Drought intensifies through Aug  | 172 bu/ac  | 20%         |
+
+  The 16-day forecast shows ECMWF bringing a cold front through the
+  western Corn Belt around Jul 24-26 with 0.5-1.0 inches. If verified,
+  the "drought breaks" scenario becomes more likely, but the damage
+  during pollination week (Jul 10-20) in Iowa and Nebraska is already
+  locked in. Those bushels aren't coming back.
+
+  CONTEXT: USDA's July WASDE used a trend yield of 181 bu/ac (their first
+  estimate). Our model agrees with USDA's number this month, but for
+  different reasons — USDA hasn't incorporated the July heat/drought yet
+  (their July report uses trend, not weather). When USDA releases their
+  August survey-based estimate, expect them to cut to 177-183 range.
+
+  MARKET IMPLICATION: If our model is right at 181 and USDA's August
+  estimate comes in at 179 (a 2 bu/ac cut from trend), that removes
+  ~280 million bushels from US production. At current demand, that would
+  cut ending stocks from 2.1 billion to 1.82 billion bushels and push
+  the stocks/use ratio from 14.5% to 12.5%. Dec corn futures should
+  reprice $0.25-$0.40 higher.
+
+  PDF report: reports/yield-model-corn-2026-07-15.pdf
+
+  Want me to run soybeans too? Soybean critical period (pod fill) hasn't
+  started yet — the model has less signal this early.
+
+
+=============================================================
+SKILL 9: Parana River Drought & Logistics Risk
+=============================================================
+
+The logistics analyst builds something no one else on the street has:
+
+User: /agent-skill-creator Here's a unique edge I want to build: the Parana River system in Argentina/Brazil handles 80% of Argentine grain exports from the Rosario-Santa Fe port complex. When the Parana runs low, draft restrictions limit barge loading, which increases freight costs and delays shipments. The river level at Rosario is the single most important logistics variable for Argentine soy/corn exports. I want to track this using weather. My idea: pull historical and forecast precipitation for the Parana River watershed — the Upper Parana in Brazil (Minas Gerais, Sao Paulo, Parana, Mato Grosso do Sul) feeds the river. If rainfall in the watershed is below normal for 60+ days, river levels at Rosario drop 2-3 months later (the lag from upstream rain to downstream flow). I can use Open-Meteo's 80 years of precipitation history to build a rainfall-to-river-level lag model, then use the 16-day forecast plus seasonal climate projections to predict river levels 1-3 months ahead. Nobody on Wall Street models this — they react to draft restrictions AFTER they're announced. We'd see them coming weeks ahead. Open-Meteo key in env as OPEN_METEO_API_KEY. Also I have a spreadsheet with historical Rosario river gauge readings from Argentina's naval hydrography service: data/rosario-river-levels-1990-2026.xlsx
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading data/rosario-river-levels-1990-2026.xlsx...
+
+  35 years of daily river gauge readings at Rosario (km 416 of the Parana).
+  I can see the 2021-2022 historic drought clearly — river dropped to 0.08m
+  (normal is ~3.5m), which caused $2.4 billion in extra freight costs for
+  Argentine exporters. Let me build this.
+
+  Implicit requirements:
+  - Open-Meteo Historical API: daily precipitation_sum for 12 sub-basins
+    across the Upper Parana watershed in Brazil (lat/long grid covering
+    ~800,000 km² of catchment area)
+  - Open-Meteo Forecast API: 16-day precipitation forecast for same grid
+  - Open-Meteo Climate API: seasonal precipitation projections (CMIP6
+    models) for 1-3 month outlook
+  - Ensemble API (ensemble-api.open-meteo.com): ECMWF 51-member and GFS
+    31-member ensembles for probabilistic rainfall forecasts — critical
+    for the "will it rain enough?" question
+  - The rainfall-to-river-level lag varies by sub-basin: Upper Parana
+    (Mato Grosso do Sul) has a 30-45 day lag to Rosario, Tietê tributary
+    (São Paulo) has 45-60 day lag, Paranaíba (Minas Gerais/Goiás) has
+    60-90 day lag
+  - Itaipu Dam releases affect downstream flow — need to account for
+    regulated vs natural flow
+  - Draft restriction thresholds: below 2.0m at Rosario = Panamax vessels
+    can't fully load. Below 1.0m = barges limited to 60% capacity.
+    Below 0.5m = effective port shutdown for ocean vessels
+  - Export calendar: Argentine soy harvest is Mar-May, corn harvest is
+    Mar-Jun. Peak export season is Apr-Aug. River problems during this
+    window are catastrophic for basis and FOB premiums
+  - The skill should output: current river level, 30/60/90-day predicted
+    level, probability of draft restrictions, and estimated freight cost
+    impact
+
+  Building...
+
+  parana-river-risk-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── openmeteo_client.py        # Open-Meteo API wrapper (all 4 endpoints)
+  │   ├── watershed_rainfall.py      # 12 sub-basin precipitation aggregation
+  │   ├── lag_model.py               # Rainfall-to-river-level lag regression
+  │   │                              #   (30/45/60/90 day lags by sub-basin)
+  │   ├── river_level_predictor.py   # Combines: actuals + forecast + climate +
+  │   │                              #   ensemble probabilities → predicted level
+  │   ├── ensemble_probabilities.py  # ECMWF 51-member rainfall probability
+  │   │                              #   distribution for watershed
+  │   ├── draft_restriction.py       # Threshold model: level → loading capacity
+  │   ├── freight_impact.py          # Estimated $/MT cost increase by level
+  │   ├── export_window_risk.py      # Overlay predictions on export calendar
+  │   └── report_builder.py          # Parana River Risk Report (PDF + charts)
+  ├── references/
+  │   ├── parana-watershed.md        # 12 sub-basins, areas, lag times
+  │   ├── rosario-gauge.md           # Gauge location, datum, thresholds
+  │   ├── draft-restrictions.md      # Historical restrictions + impacts
+  │   ├── itaipu-releases.md         # Dam regulation effects
+  │   └── methodology.md            # Lag model, ensemble approach
+  ├── assets/
+  │   ├── sub_basins.geojson         # 12 watershed polygons with centroids
+  │   ├── rosario_historical.csv     # River gauge 1990-2026
+  │   └── trained_lag_model.json     # Serialized lag coefficients
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (OPEN_METEO_API_KEY read from env)
+  Installed at: ~/.claude/skills/parana-river-risk-skill
+
+  Shared to: github.com/acme-trading/parana-river-risk-skill
+
+
+--- February, heading into Argentine export season ---
+
+Logistics Analyst: /parana-river-risk-skill What's the river outlook for the April-August export window? I need to know if we should be hedging freight.
+
+Copilot (loading parana-river-risk-skill):
+
+  Pulling Open-Meteo historical precip for Parana watershed (last 180 days)...
+  Pulling 16-day forecast (ECMWF + GFS)...
+  Pulling ECMWF 51-member ensemble for next 15 days...
+  Pulling Climate API seasonal projection (Mar-Aug 2026)...
+  Running lag model...
+
+  PARANA RIVER RISK REPORT — February 28, 2026
+
+  CURRENT STATUS:
+  River level at Rosario: 2.85m (normal for late Feb: 3.8m)
+  Status: BELOW NORMAL but above restriction threshold (2.0m)
+
+  WATERSHED RAINFALL — LAST 90 DAYS (Nov-Feb):
+
+  | Sub-basin           | Actual (mm) | Normal (mm) | Deficit  |
+  |---------------------|-------------|-------------|----------|
+  | Upper Parana (MS)    | 680         | 820         | -17.1%   |
+  | Tietê (SP)          | 590         | 780         | -24.4%   |
+  | Paranaíba (MG/GO)   | 710         | 850         | -16.5%   |
+  | Iguaçu (PR)         | 820         | 790         | +3.8%    |
+  | Paraguay River      | 440         | 620         | -29.0%   |
+  | TOTAL WATERSHED     | 3,240       | 3,860       | -16.1%   |
+
+  The Tietê (São Paulo) and Paraguay River sub-basins are significantly
+  below normal. The Iguaçu (Paraná state) is the only sub-basin at or
+  above normal.
+
+  16-DAY FORECAST:
+
+  | Period          | Forecast Precip | Normal  | Outlook     |
+  |-----------------|-----------------|---------|-------------|
+  | Mar 1-7         | 35mm            | 45mm    | Below normal|
+  | Mar 8-15        | 50mm            | 42mm    | Above normal|
+
+  A frontal system around Mar 10-12 brings the best rain chance in weeks,
+  but it's concentrated over the Iguaçu sub-basin (southern watershed),
+  which has the shortest lag to Rosario. Upper Parana stays drier.
+
+  ENSEMBLE PROBABILITY (ECMWF 51-member, next 15 days):
+  - Probability of total watershed rainfall > normal: 22%
+  - Probability of total watershed rainfall < 75% of normal: 41%
+  - Probability of total watershed rainfall < 50% of normal: 12%
+
+  PREDICTED RIVER LEVELS AT ROSARIO:
+
+  | Period      | Predicted Level | Normal  | Restriction Risk |
+  |-------------|-----------------|---------|------------------|
+  | March       | 2.6m ± 0.4m     | 3.5m    | LOW (>2.0m)      |
+  | April       | 2.1m ± 0.5m     | 3.0m    | MODERATE (near threshold) |
+  | May         | 1.6m ± 0.6m     | 2.5m    | HIGH (<2.0m likely) |
+  | June        | 1.3m ± 0.7m     | 2.2m    | HIGH              |
+  | July        | 1.5m ± 0.8m     | 2.0m    | MODERATE-HIGH     |
+  | August      | 1.8m ± 0.7m     | 2.1m    | MODERATE          |
+
+  PROBABILITY OF DRAFT RESTRICTIONS (level < 2.0m) BY MONTH:
+  | April | May  | June | July | August |
+  |-------|------|------|------|--------|
+  | 38%   | 72%  | 81%  | 65%  | 52%    |
+
+  FREIGHT IMPACT ESTIMATE:
+
+  Current Up-River freight (Rosario-to-vessel): $18/MT
+  If level drops to 1.5m (May estimate): $28-32/MT (+$10-14/MT)
+  If level drops to 1.0m (worst case): $38-45/MT (+$20-27/MT)
+
+  For context: Argentine FOB soybean premium is currently +$8/MT over
+  CBOT. A $14/MT freight increase would push FOB premiums to +$22/MT,
+  which is close to the $25/MT peak during the 2021-22 Parana drought.
+
+  CLIMATE MODEL SEASONAL OUTLOOK (Mar-Aug 2026):
+  5 of 7 CMIP6 models show below-normal precipitation for the Upper
+  Parana watershed through May, with a return to normal by July. This
+  is consistent with the current weak La Niña signal, which historically
+  reduces rainfall in southern Brazil and the Parana basin.
+
+  RECOMMENDATION:
+  High probability (72%) of draft restrictions in May, coinciding with
+  peak Argentine soybean export shipments. This is a tradeable event:
+  - Argentine FOB soy basis will widen
+  - Brazilian soy basis (Paranaguá, Santos) will strengthen as buyers
+    divert from Rosario
+  - Barge freight futures (if available) should be bought
+  - CBOT May-July soybean spread could steepen on logistics premium
+
+  If you want to hedge, do it now — by the time restrictions are
+  announced (typically 2-3 weeks before they bite), the freight market
+  will have already moved.
+
+  PDF: reports/parana-river-risk-2026-02-28.pdf
+
+
+=============================================================
+SKILL 10: Global Crop Calendar & Anomaly Scanner
+=============================================================
+
+The weather analyst builds a skill that scans every major growing region
+on Earth simultaneously — the "Bloomberg terminal for crop weather":
+
+User: /agent-skill-creator I want a skill that monitors weather anomalies across every major crop-producing region globally — all at once. The commodity markets move when weather deviates from normal in a key region at a critical growth stage. The problem: there are 30+ regions that matter and each has a different crop calendar. I can't manually check weather for Brazil, Argentina, US, EU, Black Sea, India, China, SE Asia, and Australia every day. I want the skill to: (1) know the crop calendar for each commodity in each region (planting, vegetative, reproductive, harvest), (2) pull the current weather from Open-Meteo for each region daily, (3) compare against the 30-year climatology, (4) flag any region where a critical weather metric (precip, temp, soil moisture) deviates beyond 1.5 standard deviations from normal during a critical growth phase, and (5) rank the anomalies by market impact (a drought during US corn pollination matters more than excess rain during Ukrainian wheat dormancy). Use Open-Meteo's historical archive for the 30-year baselines and the forecast API for the forward-looking 16-day window. OPEN_METEO_API_KEY is in my env. Here's my spreadsheet with all the regions and crop calendars: data/global-crop-calendar.xlsx
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading data/global-crop-calendar.xlsx...
+
+  32 region-commodity combinations across 14 countries. Each with planting,
+  vegetative, reproductive, and harvest date ranges. This is a proper global
+  surveillance system. Let me build this.
+
+  Implicit requirements:
+  - Open-Meteo Historical API: 30-year daily climatology (1994-2023)
+    for 32 regions. Variables: temperature_2m_max, temperature_2m_min,
+    precipitation_sum, soil_moisture_0_to_7cm, et0_fao_evapotranspiration,
+    vapour_pressure_deficit
+  - Open-Meteo Forecast API: current + 16-day for all 32 regions
+  - Each region needs multiple grid points (not just one centroid) to
+    capture spatial variability — a 3x3 grid (~100km spacing) per region
+  - The 30-year climatology must be pre-computed and cached (not pulled
+    daily — 32 regions × 30 years = too many API calls in real-time)
+  - Standard deviation calculation: for each variable, each day-of-year,
+    each region → mean and stddev from 30-year history
+  - "Market impact weight": reproductive stage anomalies weighted 3x,
+    vegetative 2x, planting/harvest 1x. Production volume of the region
+    also weights the score (Iowa corn matters more than Ohio corn)
+  - Output: a ranked "heat map" — red/orange/yellow/green for each
+    region-commodity pair, sorted by composite impact score
+  - The scanner should run in < 30 seconds despite querying 32 regions
+    (batch and parallelize Open-Meteo calls, 3x3 grid = 288 locations)
+  - Ensemble API for the 16-day window adds probabilistic dimension —
+    "65% chance this anomaly persists through next week"
+
+  Building...
+
+  crop-anomaly-scanner-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── openmeteo_client.py        # Open-Meteo API wrapper (batch, parallel)
+  │   ├── climatology_builder.py     # Pre-compute 30yr normals + stddev
+  │   │                              #   (run once, cache to assets/)
+  │   ├── anomaly_detector.py        # Current weather vs climatology,
+  │   │                              #   z-score by variable by region
+  │   ├── growth_stage_tracker.py    # What stage is each crop in today?
+  │   ├── impact_scorer.py           # Anomaly × growth stage × production
+  │   │                              #   volume = composite impact score
+  │   ├── ensemble_persistence.py    # Will the anomaly continue? (ECMWF ensemble)
+  │   ├── region_grid.py             # 3x3 grid generator per region
+  │   ├── dashboard_builder.py       # Global heat map (HTML interactive)
+  │   └── daily_briefing.py          # "Top 5 anomalies today" PDF
+  ├── references/
+  │   ├── crop-calendar.md           # 32 region-commodity growth phases
+  │   ├── region-definitions.md      # Lat/long bounds, production weights
+  │   ├── anomaly-thresholds.md      # z-score levels, impact weighting
+  │   ├── historical-analogues.md    # Past anomaly events + market outcomes
+  │   └── methodology.md            # Full scoring methodology
+  ├── assets/
+  │   ├── regions.json               # 32 regions with grids + weights
+  │   ├── crop_calendar.json         # Growth phase dates by region-commodity
+  │   ├── climatology_cache/         # Pre-computed 30yr normals (per region)
+  │   │   ├── us-corn-belt.json
+  │   │   ├── brazil-center-west.json
+  │   │   ├── argentina-pampas.json
+  │   │   └── ... (29 more)
+  │   └── production_weights.json    # Regional share of global production
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (OPEN_METEO_API_KEY read from env)
+  Installed at: ~/.claude/skills/crop-anomaly-scanner-skill
+
+  Shared to: github.com/acme-trading/crop-anomaly-scanner-skill
+
+
+--- Daily morning scan ---
+
+Research Director: /crop-anomaly-scanner-skill Morning scan. What's flashing?
+
+Copilot (loading crop-anomaly-scanner-skill):
+
+  Pulling current weather for 32 regions (288 grid points)...
+  Comparing against 30-year climatology...
+  Scoring by growth stage and production weight...
+
+  GLOBAL CROP ANOMALY SCANNER — March 4, 2026, 07:15 ET
+
+  TOP 5 ANOMALIES BY MARKET IMPACT:
+
+  #1  ARGENTINA PAMPAS — Soybeans (pod fill)                    SCORE: 9.2
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ Precipitation last 30 days: 42mm (normal: 98mm)   z = -2.31    │
+  │ Soil moisture 0-7cm: 0.12 m³/m³ (normal: 0.22)   z = -2.05    │
+  │ Max temperature avg: 34.2°C (normal: 30.8°C)      z = +1.72    │
+  │ VPD avg: 2.14 kPa (normal: 1.48 kPa)              z = +1.89    │
+  │ Growth stage: REPRODUCTIVE (R5 pod fill) — CRITICAL             │
+  │ Ensemble: 78% chance below-normal precip continues 15 days      │
+  │                                                                  │
+  │ ANALOGUE: Feb 2018 (similar z-scores) → Argentina lost 20 MMT   │
+  │ of soybeans, CBOT rallied $2.50/bu over 6 weeks.                │
+  │ Current deviation isn't as severe yet but accelerating.          │
+  └──────────────────────────────────────────────────────────────────┘
+
+  #2  US SOUTHERN PLAINS — Winter wheat (jointing)              SCORE: 6.8
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ Precipitation last 60 days: 28mm (normal: 72mm)   z = -2.08    │
+  │ Soil moisture 0-7cm: 0.14 m³/m³ (normal: 0.21)   z = -1.78    │
+  │ Growth stage: VEGETATIVE (jointing, approaching boot)           │
+  │ Region: Kansas, Oklahoma, Texas panhandle                       │
+  │ Ensemble: 55% below-normal precip continues, 30% near-normal   │
+  │                                                                  │
+  │ HRW wheat entering its most water-sensitive phase. If drought   │
+  │ persists through March, expect USDA to lower winter wheat       │
+  │ condition ratings and KC wheat to firm.                         │
+  └──────────────────────────────────────────────────────────────────┘
+
+  #3  VIETNAM CENTRAL HIGHLANDS — Robusta coffee (cherry dev)   SCORE: 5.4
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ Precipitation last 30 days: 8mm (normal: 22mm)    z = -1.62    │
+  │ Temperature avg: 26.8°C (normal: 24.1°C)          z = +1.87    │
+  │ Growth stage: REPRODUCTIVE (cherry development)                 │
+  │ Region: Dak Lak, Lam Dong, Gia Lai provinces                   │
+  │ Ensemble: 60% chance dry pattern continues through mid-March    │
+  │                                                                  │
+  │ Vietnam = 40% of global robusta. Dry + warm during cherry dev   │
+  │ reduces bean size and weight. Could shave 1-2 MMT off the       │
+  │ 2026/27 harvest estimate. RC robusta may firm on this.         │
+  └──────────────────────────────────────────────────────────────────┘
+
+  #4  INDIA — Rabi wheat (grain fill)                           SCORE: 4.9
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ Max temperature: 33.5°C (normal: 28.9°C)          z = +2.12    │
+  │ Growth stage: REPRODUCTIVE (grain fill, 3-4 weeks to harvest)   │
+  │ Region: Punjab, Haryana, Uttar Pradesh, Madhya Pradesh          │
+  │                                                                  │
+  │ Terminal heat stress. March heat during grain fill is the #1     │
+  │ yield risk for Indian wheat. The 2022 heatwave cost India 5 MMT │
+  │ and triggered the export ban. Current temps not yet at 2022      │
+  │ levels but approaching. Watch closely this week.                │
+  └──────────────────────────────────────────────────────────────────┘
+
+  #5  BRAZIL CENTER-WEST — Safrinha corn (vegetative)           SCORE: 4.1
+  ┌──────────────────────────────────────────────────────────────────┐
+  │ Precipitation last 14 days: 18mm (normal: 55mm)   z = -1.68    │
+  │ Growth stage: VEGETATIVE (V6-V8, recently planted)              │
+  │ Region: Mato Grosso, Goiás, Mato Grosso do Sul                 │
+  │                                                                  │
+  │ Safrinha corn was planted late (soy harvest delay) and now      │
+  │ hitting a dry spell during early vegetative growth. Not critical │
+  │ yet — safrinha corn is drought-tolerant in early stages. But if │
+  │ dryness persists into April (tasseling), this moves to #1.     │
+  └──────────────────────────────────────────────────────────────────┘
+
+  REGIONS ALL CLEAR (no anomalies >1.5 stddev in critical phases):
+  EU (France wheat, Germany rapeseed), Black Sea (Ukraine corn/wheat,
+  Russia wheat), Australia (canola, wheat — dormant/off-season), China
+  (winter wheat — adequate snow cover), US Corn Belt (pre-planting,
+  soil moisture recharging), Brazil South (soybean harvest on pace),
+  SE Asia (palm oil — normal monsoon), Canada (off-season).
+
+  Full dashboard: reports/anomaly-dashboard-2026-03-04.html
+  PDF briefing: reports/crop-anomalies-2026-03-04.pdf
+
+  Want me to drill deeper into any of these, or pull up the historical
+  analogue analysis for the Argentina situation?
+
+
+--- Drilling into a specific alert ---
+
+Analyst: /crop-anomaly-scanner-skill Pull up the full historical analogue for Argentina #1. How bad could this get?
+
+Copilot:
+
+  Searching 30 years for matching patterns: Pampas soybeans, February
+  precip z < -2.0, soil moisture z < -1.5, during reproductive phase...
+
+  ARGENTINA SOYBEAN DROUGHT — HISTORICAL ANALOGUES
+
+  5 matching events found:
+
+  | Year    | Feb Precip z | Soil z | Outcome             | CBOT Impact    |
+  |---------|--------------|--------|---------------------|----------------|
+  | 2017/18 | -2.45        | -2.20  | 20 MMT production loss | +$2.50/bu (6wk) |
+  | 2008/09 | -2.62        | -2.41  | 16 MMT production loss | +$1.80/bu (4wk) |
+  | 2011/12 | -1.95        | -1.70  | 12 MMT production loss | +$3.20/bu (8wk) |
+  | 2003/04 | -1.88        | -1.55  | 7 MMT production loss  | +$0.90/bu (3wk) |
+  | 2022/23 | -3.10        | -2.80  | 25 MMT production loss | +$1.40/bu (4wk) |
+
+  CURRENT 2025/26 vs ANALOGUES:
+  Feb precip z: -2.31 (between 2017/18 and 2008/09 severity)
+  Soil moisture z: -2.05
+
+  PRODUCTION IMPACT ESTIMATE:
+  Based on analogues, the current deviation pattern suggests a production
+  loss of 8-18 MMT from USDA's current 50 MMT estimate.
+
+  | Scenario         | Production | Loss from USDA | Probability |
+  |------------------|------------|----------------|-------------|
+  | Rain arrives Mar 10-15 | 45 MMT | -5 MMT     | 22%         |
+  | Continued dry Mar | 40 MMT    | -10 MMT        | 48%         |
+  | Drought deepens  | 35 MMT    | -15 MMT        | 30%         |
+
+  Note: USDA already cut 2 MMT in March (to 50 from 52). The market has
+  priced in ~3-4 MMT of further downside. If the "continued dry" scenario
+  plays out (10 MMT total cut), there's 6-7 MMT of production loss NOT
+  yet in the price.
+
+  SOYBEAN MEAL IMPACT: Argentina = 45% of global soybean meal exports.
+  A 10 MMT soy production loss = ~7.5 MMT less crush = ~5.5 MMT less
+  meal exports. Meal importers (EU, SE Asia) would need to source from
+  US or Brazil. CBOT soybean meal could rally $30-50/short ton.
+
+  16-DAY ENSEMBLE OUTLOOK (ECMWF 51-member):
+  Probability of meaningful rain (>25mm) in Pampas next 15 days: 28%
+  Probability of continued dry (<10mm) next 15 days: 52%
+  Probability of drought-breaking event (>50mm): 8%
+
+  RECOMMENDATION: The analogues and ensemble data both point toward the
+  "continued dry" scenario as most likely. USDA will likely cut another
+  3-5 MMT in the April WASDE. The market is under-pricing this risk.
+
+
+=============================================================
+SKILL 11: Planting Window Advisor
+=============================================================
+
+A completely different use case — this one faces the production side,
+not the trading desk. An analyst who also advises farmer clients:
+
+User: /agent-skill-creator Our brokerage has farmer clients across the Midwest who ask us every spring: "When should I plant?" I want a skill that answers this using weather data. The decision depends on: (1) soil temperature at 2-inch depth — corn needs >50F sustained for 3 days, soybeans need >55F, (2) soil moisture — too wet and you get compaction, too dry and you need irrigation, the sweet spot is 0.20-0.30 m³/m³, (3) the 7-day forecast — no point planting if a freeze or heavy rain is coming, (4) accumulated GDD so the crop reaches maturity before the first fall frost. Open-Meteo has soil temperature at 0cm and 6cm depth, soil moisture at multiple levels, and the 16-day forecast. For any lat/long a farmer gives me, I want the skill to say "GO — plant corn now" or "WAIT — soil temp at 48F, need 2 more warm days" or "RISK — planting window closing, frost date approaching". OPEN_METEO_API_KEY is in my env.
+
+Copilot (loading agent-skill-creator skill):
+
+  This is a decision-support tool for planting timing. Let me formalize
+  the agronomic rules and build it.
+
+  Implicit requirements:
+  - Open-Meteo Forecast API: soil_temperature_6cm (closest to 2-inch
+    depth), soil_moisture_0_to_1cm, temperature_2m_min (freeze risk),
+    precipitation_sum, for any user-provided lat/long
+  - Open-Meteo Historical API: need average first fall frost date
+    (temperature_2m_min < 0°C) from 30-year history at the location
+    to calculate "days to maturity available"
+  - Corn maturity: needs 2,500-2,800 GDD (base 50F) depending on
+    hybrid maturity class. Soybean: 2,200-2,600 GDD
+  - The skill must accept a location (lat/long, county, zip code, or
+    city name) and hybrid maturity (short/medium/full season)
+  - "GO/WAIT/RISK" traffic light must consider ALL factors simultaneously
+    — soil temp alone isn't enough if rain is forecast
+  - Workability factor: if precipitation > 15mm in last 48 hours, soil
+    is too wet for heavy equipment regardless of other factors
+  - Farmers want a 5-day window recommendation, not just "today" —
+    "Best planting day this week: Thursday"
+
+  Building...
+
+  planting-window-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── openmeteo_client.py        # Open-Meteo API wrapper
+  │   ├── soil_readiness.py          # Soil temp + moisture check
+  │   ├── freeze_risk.py             # 16-day freeze probability
+  │   ├── workability.py             # Field trafficability from recent precip
+  │   ├── gdd_projection.py          # GDD remaining vs maturity requirement
+  │   │                              #   vs average first frost date
+  │   ├── window_optimizer.py        # Score each day in the next 14 days,
+  │   │                              #   recommend best planting window
+  │   ├── frost_date_calculator.py   # 30-year avg first fall frost by location
+  │   └── advisor_output.py          # GO/WAIT/RISK with plain-English reasoning
+  ├── references/
+  │   ├── planting-rules.md          # Agronomic decision rules
+  │   ├── gdd-maturity-table.md      # GDD requirements by hybrid class
+  │   ├── soil-thresholds.md         # Temperature and moisture thresholds
+  │   └── methodology.md
+  ├── assets/
+  │   └── maturity_zones.json        # Hybrid maturity GDD by latitude band
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED
+  Installed at: ~/.claude/skills/planting-window-skill
+
+  Shared to: github.com/acme-trading/planting-window-skill
+
+
+--- A farmer client calls in April ---
+
+Broker: /planting-window-skill One of my clients near Ames, Iowa (42.03°N, 93.47°W) wants to plant corn this week. Full-season hybrid (2,700 GDD). Is he good to go?
+
+Copilot (loading planting-window-skill):
+
+  Pulling Open-Meteo data for 42.03°N, 93.47°W...
+  Forecast: 16 days | Soil data: current + forecast
+  Historical: calculating average first fall frost date...
+
+  PLANTING WINDOW ADVISOR — Ames, Iowa (42.03°N, 93.47°W)
+  Crop: Corn | Hybrid: Full season (2,700 GDD required)
+  Date: April 14, 2026
+
+  CURRENT CONDITIONS:
+  ┌────────────────────────────────────────────────────────────────┐
+  │ Soil temp (6cm depth):     52.1°F  (need: >50°F for 3 days)  │
+  │ Consecutive days >50°F:    4 days  ✓ PASS                    │
+  │ Soil moisture (0-7cm):     0.27 m³/m³ (ideal: 0.20-0.30)  ✓ │
+  │ Last significant rain:     3 days ago (12mm)  ✓ WORKABLE     │
+  │ Avg first fall frost:      October 12 (30yr avg)              │
+  │ Days from today to frost:  181 days                           │
+  │ GDD available (Apr14-Oct12): ~2,850 (based on 30yr avg)      │
+  │ GDD required (full season): 2,700                             │
+  │ GDD margin:                150 GDD (5.6% buffer)  ✓ OK       │
+  └────────────────────────────────────────────────────────────────┘
+
+  7-DAY FORECAST:
+  | Day       | High  | Low   | Precip | Soil Temp | Verdict      |
+  |-----------|-------|-------|--------|-----------|--------------|
+  | Mon 4/14  | 68°F  | 45°F  | 0mm    | 52°F      | PLANTABLE    |
+  | Tue 4/15  | 72°F  | 48°F  | 0mm    | 53°F      | PLANTABLE *  |
+  | Wed 4/16  | 70°F  | 50°F  | 0mm    | 54°F      | PLANTABLE *  |
+  | Thu 4/17  | 64°F  | 46°F  | 8mm    | 53°F      | MARGINAL     |
+  | Fri 4/18  | 58°F  | 40°F  | 22mm   | 50°F      | TOO WET      |
+  | Sat 4/19  | 55°F  | 38°F  | 5mm    | 48°F      | TOO COOL/WET |
+  | Sun 4/20  | 62°F  | 42°F  | 0mm    | 49°F      | RECOVERING   |
+
+  ════════════════════════════════════════════════════════════════
+  RECOMMENDATION:   GO — PLANT TUESDAY OR WEDNESDAY
+  ════════════════════════════════════════════════════════════════
+
+  Best window: Tuesday April 15 and Wednesday April 16. Soil is warm,
+  moisture is ideal, and 48 hours of dry weather ahead gives excellent
+  field conditions. Thursday is marginal (light rain incoming). Friday
+  onward is too wet — a 22mm rain event will make fields unworkable
+  for 2-3 days.
+
+  If your client misses the Tue-Wed window, next opportunity is likely
+  Monday April 21 after the weekend system clears and fields dry out
+  (soil needs ~48hr of dry weather after 22mm of rain to be trafficable).
+
+  GDD margin is tight at 5.6% for a full-season hybrid. If planting
+  slips past April 25, I'd recommend switching to a medium-season hybrid
+  (2,500 GDD) to guarantee maturity before frost. Every day of planting
+  delay after April 20 costs roughly 1-1.5 bu/ac in yield potential.
+
+
+=============================================================
+COMPLETE TEAM SKILL LIBRARY — WITH OPEN-METEO
+=============================================================
+
+Updated library with the weather-powered skills:
+
+  SKILL                          DATA SOURCES                      USE CASE
+  ──────────────────────────────────────────────────────────────────────────────
+  wasde-analyzer-skill           USDA WASDE, Bloomberg             Monthly S&D analysis
+  crop-weather-weekly-skill      USDA NASS, NOAA, Drought Mon.     Weekly crop report
+  basis-export-tracker-skill     DTN, USDA FAS, barge freight      Daily basis + exports
+  coffee-fundamental-skill       CEPEA, ICE, CFTC, ECMWF          Coffee market monitor
+  psd-balance-sheet-skill        USDA PSD API                      Global balance sheets
+  trade-flow-intel-skill         GTT REST API                      Trade flow shifts
+  supply-chain-risk-skill        PSD + GTT + FAS                   Export restriction risk
+  yield-predictor-skill          Open-Meteo + NASS historical      Pre-USDA yield estimates
+  parana-river-risk-skill        Open-Meteo (4 endpoints)          River logistics risk
+  crop-anomaly-scanner-skill     Open-Meteo (all 32 regions)       Global weather alerts
+  planting-window-skill          Open-Meteo forecast + archive     Farmer planting advice
+  seasonal-spread-skill          CBOT historical                   Seasonal spread models
+  client-briefing-skill          Calls other skills internally     Weekly flagship report
+
+  Environment variables required:
+
+    export OPEN_METEO_API_KEY="your-professional-api-key"
+    export PSD_API_KEY="your-usda-fas-api-key"
+    export GTT_USER_ID="your-gtt-username"
+    export GTT_PASSWORD="your-gtt-password"
+
+  The Open-Meteo skills are the ones that give the team a genuine
+  informational edge. Every bank and fund has PSD data and GTT access.
+  But almost nobody is systematically converting granular weather data
+  into crop yield estimates, river level predictions, and global anomaly
+  scores in real-time. The data is public (Open-Meteo). The edge isn't
+  the data — it's the skill that knows what to do with it.
