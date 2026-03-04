@@ -2783,7 +2783,14 @@ FINAL TEAM SKILL LIBRARY — FULL DATA PIPELINE STACK
   email-thread-intel-skill        Email threads (.eml/.msg/raw text)   Intent extraction & action items
   agdb-query-assistant-skill      Internal PostgreSQL data warehouse   Natural language → safe SQL queries
 
-  19 skills. 9 data sources. One team.
+  ENTERPRISE ADOPTION SKILLS (GlobalAgri Capital scenario):
+  export-inspections-skill        USDA FAS public CSV                  Weekly export pace tracker
+  wasde-extractor-skill           USDA WASDE PDF (pages 12-19)         Monthly S&D extraction
+  yield-model-skill               MATLAB wrapper + Databricks inputs   Existing model made runnable
+  daily-assessment-skill          Broker emails + Google Sheet + FX     Physical price assessment
+  databricks-bridge-skill         Databricks SQL connector             Skill outputs → shared lake
+
+  24 skills. 12 data sources. Three desks. One on-ramp.
 
   The junior analyst who joined last month can type:
     /noaa-crop-monitor-skill Morning scan
@@ -4596,3 +4603,1171 @@ The internal database skill solves three problems simultaneously:
   want someone accidentally running SELECT * on a 500M-row table or
   pulling client PII into an email attachment. The skill makes self-
   service safe.
+
+
+#############################################################
+#############################################################
+##                                                         ##
+##  ENTERPRISE ADOPTION SCENARIO:                          ##
+##  "THE DOG LOOKING AT THE CASTLE"                        ##
+##                                                         ##
+##  How a non-technical agriculture commodities research    ##
+##  team goes from tool paralysis to daily productivity     ##
+##  using agent-skill-creator as the on-ramp               ##
+##                                                         ##
+#############################################################
+#############################################################
+
+CONTEXT:
+
+GlobalAgri Capital is a mid-large commodity trading house with a
+25-person agriculture research division, subdivided into three desks:
+
+  AG MODELLING (8 people)
+  Led by Dr. Carla Ribeiro. Econometricians, quant analysts, and
+  statisticians. They build yield models, demand elasticity models,
+  and price forecasting regressions. Most have PhDs. They live in
+  Excel, MATLAB, and some R. A few can write Python. None use Git.
+  Their "version control" is saving files as model_v3_final_FINAL2.xlsx
+
+  SUPPLY & DEMAND (9 people)
+  Led by Henrik Johansson. Fundamental analysts who maintain global
+  balance sheets for grains, oilseeds, sugar, coffee, cotton. They
+  track USDA reports, foreign attaché data, harvest progress, and
+  trade flows. Most are experienced commodity professionals (10-20
+  years) who work in Excel, Bloomberg Terminal, and email. Zero
+  programming. They get data by asking the data team or downloading
+  CSVs from USDA websites.
+
+  PRICE ASSESSMENT (8 people)
+  Led by Tomoko Watanabe. They produce the firm's daily price
+  assessments and forward curves for internal trading desks and
+  external clients. They pull settlement prices, broker indications,
+  and physical market bids/offers. Heavy Bloomberg and Refinitiv
+  users. Some basic VBA macros. No Python, no SQL, no Git.
+
+WHAT IT PROVISIONED:
+
+Six months ago, the CTO's office rolled out an "AI-enabled developer
+toolkit" to the entire research division. Each analyst received:
+
+  ✓ VS Code (installed on their laptop)
+  ✓ GitHub Copilot license (Enterprise, via VS Code extension)
+  ✓ Copilot CLI (installed, authenticated via corporate SSO)
+  ✓ Enterprise GitLab access (gitlab.globalagri.com)
+  ✓ Databricks workspace (databricks.globalagri.com)
+  ✓ Read-only access to the firm's data lake (agri_lake.*)
+
+What IT also provided:
+  - A 90-minute "Introduction to AI Coding Tools" webinar (recorded)
+  - A 40-page PDF: "Getting Started with Your AI Developer Toolkit"
+  - A Confluence page: "Databricks Quick Start Guide"
+  - An internal Slack channel: #ai-tools-support (3 IT staff monitor it)
+
+WHAT ACTUALLY HAPPENED:
+
+Six months later, adoption metrics from the CTO dashboard:
+
+  | Tool           | Active Users (last 30 days) | Of 25 analysts |
+  |----------------|----------------------------:|----------------|
+  | VS Code        | 4                           | 16%            |
+  | GitHub Copilot | 2                           | 8%             |
+  | Copilot CLI    | 0                           | 0%             |
+  | GitLab         | 1 (accidental login)        | 4%             |
+  | Databricks     | 3                           | 12%            |
+
+The CTO is frustrated. The licenses cost $180K/year. The 90-minute
+webinar had 40% attendance. Nobody finished the 40-page PDF. The
+Slack channel has 6 messages, 4 of which are "how do I log in?"
+
+The problem isn't the tools. The problem is that nobody on the
+research team knows WHY they would use these tools, HOW to start,
+or WHAT their first task should be. They have jobs to do — balance
+sheets, price assessments, model runs — and learning a code editor
+feels like a distraction from real work.
+
+They are, as one S&D analyst put it in the hallway, "like a dog
+looking at a castle."
+
+
+=============================================================
+PHASE 1: THE CHAMPION DISCOVERS AGENT-SKILL-CREATOR
+=============================================================
+
+Every enterprise adoption starts with one person. In this case it's
+Luís Ferreira, a 28-year-old S&D analyst (3 years at the firm) who
+is slightly more tech-curious than his colleagues. He attended the
+webinar. He opened VS Code once. He closed it after 10 minutes
+because he didn't know what to do with it. Then he saw a LinkedIn
+post about agent-skill-creator and thought: "maybe this is the
+missing piece."
+
+Luís opens VS Code for the second time in six months. He has GitHub
+Copilot active (the extension was pre-installed by IT). He opens
+Copilot Chat (Agent mode) — it's the sidebar on the right with the
+sparkle icon. He types:
+
+
+Luís: I don't really know what I'm doing here. I'm a commodity S&D analyst, not a developer. My company gave me VS Code and Copilot but I have no idea how to use them for my actual work. I maintain global soybean balance sheets in Excel. Is there anything useful I can actually do here?
+
+Copilot:
+
+  You're in the right place. VS Code + Copilot isn't just for
+  developers — it's for anyone who works with data, documents, or
+  repetitive processes.
+
+  Here's what you can do RIGHT NOW with zero coding experience:
+
+  1. Ask me to analyze files — drop an Excel, CSV, or PDF into VS
+     Code and ask me questions about it
+  2. Ask me to write formulas — describe what you need and I'll
+     write the Excel formula or Python code
+  3. Ask me to automate repetitive tasks — if you do the same thing
+     every week, I can help you build a script
+  4. Ask me to query databases — if you have database access, describe
+     what you need in plain English
+
+  What's the most tedious part of your weekly workflow?
+
+Luís: Every Monday I download the latest USDA Export Inspections CSV from the USDA FAS website, then I manually copy the soybean rows into my master Excel tracker, calculate the year-over-year change, compare to the weekly pace needed to hit the USDA full-year forecast, and update a summary table that goes into our team's weekly report. It takes about 45 minutes and it's the most boring part of my week.
+
+Copilot:
+
+  That's a perfect first automation. Let me help you turn that into
+  something that takes 30 seconds instead of 45 minutes.
+
+  I can write a Python script that:
+  1. Downloads the latest Export Inspections CSV from USDA FAS
+  2. Filters for soybeans
+  3. Calculates YoY change
+  4. Compares to the pace needed for the full-year forecast
+  5. Generates a summary table
+  6. Outputs to Excel (or directly into your tracker format)
+
+  But before I write a one-off script, have you heard of agent-
+  skill-creator? It's a tool that can turn this workflow into a
+  reusable SKILL — something you or your teammates can invoke with
+  a single command, every week, forever. Instead of a script you run
+  once and forget, you'd have a skill that becomes part of your
+  team's toolkit.
+
+  Want me to use agent-skill-creator to build this properly?
+
+Luís: I've heard of it but I don't know how to set it up. I don't even know how to install things in VS Code. Can you walk me through it step by step? Like, assume I know nothing.
+
+Copilot:
+
+  Absolutely. Here's what we'll do, step by step. I'll tell you
+  exactly what to click and type.
+
+  STEP 1: Open a terminal in VS Code
+  Look at the bottom of VS Code. There's a panel area. If you don't
+  see a terminal, press Ctrl+` (the backtick key, top-left of your
+  keyboard, next to 1). A terminal panel will appear at the bottom.
+  It looks like a black or dark box where you can type commands.
+  That's the terminal. It's like Command Prompt but inside VS Code.
+
+  STEP 2: Install agent-skill-creator
+  In that terminal, paste this single line and press Enter:
+
+  curl -fsSL https://raw.githubusercontent.com/FrancyJGLisboa/agent-skill-creator/main/scripts/bootstrap.sh | sh
+
+  This will download and install agent-skill-creator. It takes about
+  10 seconds. You'll see some output — that's normal. When it says
+  "Done" you're good.
+
+  STEP 3: Verify it works
+  In Copilot Chat (this panel where we're talking), type:
+  /agent-skill-creator hello
+
+  If I respond with information about how to create skills, it's
+  working.
+
+  Try Step 1 now — press Ctrl+` to open the terminal.
+
+Luís: OK, I opened the terminal. It says "luisf@GLOBALAGRI-PC234 ~" and there's a blinking cursor. I pasted the curl command and pressed Enter. It's doing things... it says "Cloning into ~/.agents/skills/agent-skill-creator" and now "Detecting tools: github-copilot... found" and "Creating symlinks..." and "Done! agent-skill-creator is ready."
+
+Copilot:
+
+  Perfect — it detected GitHub Copilot automatically and installed
+  itself. Now let's build your first skill. Tell me about that
+  Export Inspections workflow in detail.
+
+Luís: /agent-skill-creator Every Monday, I go to apps.fas.usda.gov/export-sales/inspections.htm, download the "Current Marketing Year" CSV for soybeans, and open it in Excel. The CSV has columns: Week Ending, Commodity, Destination, Weekly Inspections (MT), and Cumulative Inspections (MT). I filter for "Soybeans" (it also has corn, wheat, etc.), create a pivot by destination (top 5: China, EU, Mexico, Japan, Egypt), calculate the week-over-week change and YoY change (I keep last year's data in a separate sheet), then calculate "pace" — cumulative inspections divided by USDA's full-year export forecast (currently 49.67 MMT per our internal estimate, though I also compare to USDA's official 47.90 MMT). The pace tells me if we're ahead or behind schedule. I format it into a summary table that Henrik (my boss) pastes into the weekly report. Here's my current Excel tracker: references/export-inspections-tracker.xlsx and here's what the final summary table looks like: references/weekly-summary-format.png
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/export-inspections-tracker.xlsx...
+  Reading references/weekly-summary-format.png...
+
+  Perfect first skill — it's repetitive, data-driven, well-defined,
+  and currently takes 45 minutes of manual work. Let me build it.
+
+  Implicit requirements:
+  - USDA FAS Export Inspections: CSV download from
+    apps.fas.usda.gov, updated every Monday by ~11am ET
+  - Filter: commodity = 'Soybeans'
+  - Destinations: group top 5 (China, EU, Mexico, Japan, Egypt),
+    remainder as "Other"
+  - YoY comparison: need previous marketing year data (Sep 2024-Aug
+    2025) for the same-week comparison
+  - Pace calculation: two versions:
+    (a) vs internal estimate (49.67 MMT) — for the team's report
+    (b) vs USDA official (47.90 MMT) — for context
+  - Marketing year: soybeans = Sep 1 – Aug 31
+  - Output: formatted summary table matching the screenshot format,
+    exported to Excel AND as a markdown table for the weekly report
+  - No API key needed — USDA FAS data is public
+  - Python dependencies: pandas, openpyxl (for Excel), requests
+
+  Building...
+
+  export-inspections-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── usda_downloader.py        # Fetch latest CSV from USDA FAS
+  │   ├── inspection_parser.py      # Filter soybeans, pivot by dest
+  │   ├── pace_calculator.py        # Cumulative vs forecast pace
+  │   ├── yoy_comparator.py         # Same-week previous MY comparison
+  │   ├── summary_builder.py        # Format into Henrik's table layout
+  │   └── excel_exporter.py         # Write to .xlsx matching tracker format
+  ├── references/
+  │   ├── usda-fas-fields.md        # CSV column definitions
+  │   ├── marketing-year.md         # Sep 1 - Aug 31 calendar
+  │   ├── destination-groups.md     # Top 5 + Other grouping
+  │   └── methodology.md
+  ├── assets/
+  │   ├── forecast_targets.json     # Internal (49.67) and USDA (47.90)
+  │   ├── destination_groups.json   # Destination → group mapping
+  │   └── previous_my_data.csv      # 2024/25 MY inspections baseline
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (no credentials needed — public data)
+  Installed at: ~/.agents/skills/export-inspections-skill
+
+Luís: That was... really fast. Can I use it right now?
+
+Copilot:
+
+  Yes. Type this:
+
+Luís: /export-inspections-skill Run the Monday update
+
+Copilot (loading export-inspections-skill):
+
+  Downloading latest Export Inspections CSV from USDA FAS...
+  Filtering for soybeans... 52 weeks of data found (MY 2025/26)
+  Loading previous year baseline...
+  Calculating pace and YoY changes...
+
+  WEEKLY EXPORT INSPECTIONS SUMMARY — Week Ending Feb 27, 2026
+
+  US SOYBEAN EXPORT INSPECTIONS (thousand MT)
+
+  | Destination | This Week | Prev Week | WoW Chg  | Same Wk LY | YoY Chg  |
+  |-------------|-----------|-----------|----------|------------|----------|
+  | China       | 812       | 748       | +8.6%    | 694        | +17.0%   |
+  | EU          | 124       | 131       | -5.3%    | 118        | +5.1%    |
+  | Mexico      | 89        | 76        | +17.1%   | 82         | +8.5%    |
+  | Japan       | 62        | 58        | +6.9%    | 65         | -4.6%    |
+  | Egypt       | 48        | 52        | -7.7%    | 41         | +17.1%   |
+  | Other       | 186       | 172       | +8.1%    | 168        | +10.7%   |
+  | TOTAL       | 1,321     | 1,237     | +6.8%    | 1,168      | +13.1%   |
+
+  PACE ANALYSIS:
+
+  | Metric                      | Value    | Status          |
+  |-----------------------------|----------|-----------------|
+  | Cumulative inspections      | 33.42 MMT|                 |
+  | Weeks completed             | 26 of 52 | 50.0%          |
+  | vs Internal forecast (49.67)| 67.3%    | ✓ AHEAD of pace |
+  | vs USDA official (47.90)    | 69.8%    | ✓ AHEAD of pace |
+  | Needed weekly pace (internal)| 626 KMT | to hit 49.67    |
+  | Needed weekly pace (USDA)   | 558 KMT  | to hit 47.90    |
+  | Actual 4-week avg pace      | 1,244 KMT| 2.0x needed (int)|
+
+  OBSERVATION: At the current 4-week average pace of 1,244 KMT/week,
+  full-year inspections would reach 65.7 MMT — far above both
+  forecasts. However, pace typically slows sharply in Q3 (May-Aug)
+  as Brazil takes over global supply. The comparison to needed pace
+  is most meaningful now during the peak US shipping window.
+
+  Summary saved to: reports/export-inspections-wk26-2026.xlsx
+  Markdown table copied to clipboard (paste into weekly report).
+
+Luís: Holy shit. That just saved me 45 minutes. And the markdown table — I can just paste that into the report?
+
+Copilot:
+
+  Yes — it's on your clipboard right now. Open the weekly report
+  and Ctrl+V. The table is already formatted in the layout Henrik
+  expects (I matched the format from your screenshot).
+
+  This will run the same way every Monday. Just type:
+    /export-inspections-skill Run the Monday update
+  and you'll have the table in 10 seconds.
+
+  Also: if you want to update the forecast targets (when USDA revises
+  their estimate), tell me and I'll update the config. You don't need
+  to edit any code.
+
+
+=============================================================
+PHASE 2: THE CHAMPION TELLS ONE COLLEAGUE
+=============================================================
+
+Tuesday morning. Luís walks past Ana Morales's desk (S&D team, 12
+years experience, covers wheat and corn). She's copy-pasting numbers
+from a USDA PDF into her Excel tracker — the same thing she's done
+every month for a decade.
+
+Luís: "Hey Ana, you know that Copilot thing IT installed? I made it
+do my export inspections summary automatically yesterday. Took 10
+seconds instead of 45 minutes."
+
+Ana: "I tried opening VS Code once. I had no idea what I was looking
+at. How did you get it to do that?"
+
+Luís: "There's this thing called agent-skill-creator. You install it
+once, then you just describe your workflow in plain English and it
+builds a tool for you. I can show you at lunch."
+
+At lunch, Luís walks Ana through the same setup: open VS Code,
+Ctrl+` for terminal, paste the bootstrap command. Ana's first
+question:
+
+Ana (in VS Code Copilot Chat): /agent-skill-creator Every month when USDA releases the WASDE report, I spend about 3 hours manually extracting the corn and wheat numbers from the PDF, comparing them to last month's estimates, calculating the month-over-month changes, flagging any revision larger than 2%, and creating a summary for our trading desk. The PDF is 40 pages and the tables I need are on pages 12-15 (world wheat) and pages 16-19 (world corn). I have the last 24 WASDE PDFs saved in a folder: data/wasde-pdfs/. Here's my current extraction template: references/wasde-extraction-template.xlsx
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/wasde-extraction-template.xlsx...
+  Scanning data/wasde-pdfs/ (24 PDFs found, Feb 2024 – Jan 2026)...
+
+  This is a PDF table extraction + time-series comparison skill.
+  The WASDE PDF has notoriously complex table layouts (merged cells,
+  footnotes, units that change between sections). But since you have
+  24 months of PDFs, I can validate my extraction against your
+  manually-verified historical data. Let me build it.
+
+  Building...
+
+  wasde-extractor-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── wasde_downloader.py       # Fetch latest WASDE PDF from USDA
+  │   ├── pdf_table_parser.py       # Extract tables from pages 12-19
+  │   │                             #   (corn and wheat world S&D)
+  │   ├── field_mapper.py           # Map PDF table cells to structured
+  │   │                             #   data (production, consumption,
+  │   │                             #   exports, ending stocks by country)
+  │   ├── revision_tracker.py       # MoM changes, flag revisions > 2%
+  │   ├── historical_builder.py     # Parse all 24 PDFs to build
+  │   │                             #   revision history database
+  │   ├── desk_summary.py           # Trading desk summary format
+  │   └── excel_exporter.py         # Match Ana's template layout
+  ├── references/
+  │   ├── wasde-page-map.md         # Which tables on which pages
+  │   ├── table-layouts.md          # Column definitions by section
+  │   ├── revision-thresholds.md    # What constitutes a "significant" move
+  │   └── methodology.md
+  ├── assets/
+  │   ├── page_ranges.json          # Wheat: 12-15, Corn: 16-19
+  │   ├── field_definitions.json    # S&D line items and units
+  │   └── revision_threshold.json   # 2% default, configurable
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Installed at: ~/.agents/skills/wasde-extractor-skill
+
+  BONUS: I parsed your 24 historical PDFs and cross-checked against
+  your Excel tracker. 23 of 24 match perfectly. The February 2025
+  extract has a discrepancy — your tracker shows Argentina wheat
+  production at 17.5 MMT but the PDF says 17.0 MMT. Possible manual
+  entry error? Worth checking.
+
+Ana: It found an error in my manual work? From 13 months ago?
+
+Copilot:
+
+  Yes. The historical PDF clearly shows 17.0 MMT for Argentina wheat
+  production in the February 2025 WASDE. Your tracker has 17.5. The
+  March 2025 entry is correct (17.0). It looks like a typo in the
+  February data entry that was accidentally carried forward in your
+  month-over-month change calculations for that one month.
+
+  This is a common benefit of automation — it doesn't make typos.
+  Going forward, the skill extracts directly from the PDF with no
+  manual transcription.
+
+Ana: OK I'm sold. But how does this Databricks thing fit in? Henrik keeps saying we should use Databricks but nobody knows what for.
+
+Copilot:
+
+  Good question. Right now, this skill downloads PDFs and processes
+  them locally on your laptop. That works fine for one person.
+
+  Databricks becomes useful when:
+  1. You want the extracted WASDE data stored in a SHARED table that
+     the whole team can query (not just your Excel file)
+  2. You want the extraction to run AUTOMATICALLY on WASDE release
+     day (every ~12th of the month) without you doing anything
+  3. You want to combine WASDE data with other sources (PSD, trade
+     data, prices) in one place
+
+  We can evolve this skill to write results to Databricks later.
+  For now, the local version gives you 90% of the value. Don't try
+  to learn Databricks AND automation at the same time — that's how
+  people get overwhelmed and quit.
+
+  Master the skill locally first. Once it feels natural, we'll
+  connect it to Databricks. One step at a time.
+
+
+=============================================================
+PHASE 3: THE TEAM LEAD NOTICES
+=============================================================
+
+Two weeks later. Henrik Johansson (Head of S&D) notices that Luís's
+Monday summary is arriving at 9:15am instead of 11:30am, and Ana's
+WASDE extraction was done in 20 minutes instead of 3 hours. He asks
+them what changed.
+
+Henrik then opens VS Code himself for the first time. He has a
+different kind of problem — he doesn't do the data work himself, but
+he manages the team's output and needs to understand the tools to
+make decisions about the team's workflow.
+
+Henrik (in VS Code Copilot Chat): I'm the head of the S&D desk. I don't need to build skills myself but I need to understand what's possible. Two of my analysts (Luís and Ana) are using something called agent-skill-creator and it's clearly making them faster. I have 9 people on my team. Each one has a set of repetitive weekly and monthly tasks. I want to understand: what tasks are good candidates for skills, and how do I roll this out to the whole team without it being another failed IT initiative?
+
+Copilot:
+
+  Smart approach — starting with strategy before tools. Let me help
+  you think through this.
+
+  SKILL CANDIDATE ASSESSMENT FRAMEWORK:
+
+  A workflow is a good skill candidate if it scores 3+ on these:
+
+  ✓ REPETITIVE: happens weekly, monthly, or on a trigger (report day)
+  ✓ STRUCTURED: has clear inputs, steps, and outputs
+  ✓ DATA-DRIVEN: involves downloading, transforming, or combining data
+  ✓ TIME-CONSUMING: takes 30+ minutes of manual work
+  ✓ ERROR-PRONE: manual copy-paste, unit conversions, formatting
+
+  Based on what I know about typical S&D desk workflows, here are the
+  likely candidates across your team:
+
+  HIGH VALUE (build first):
+  | Task                         | Who       | Frequency | Manual Time | Skill? |
+  |------------------------------|-----------|-----------|-------------|--------|
+  | Export Inspections summary   | Luís      | Weekly    | 45 min      | ✓ DONE |
+  | WASDE PDF extraction         | Ana       | Monthly   | 3 hours     | ✓ DONE |
+  | Crop Progress data pull      | Multiple  | Weekly    | 30 min      | YES    |
+  | PSD balance sheet update     | Multiple  | Monthly   | 2 hours     | YES    |
+  | Attaché report extraction    | Regional  | Ad hoc    | 1-2 hours   | YES    |
+  | CFTC COT positioning summary | Luís?     | Weekly    | 40 min      | YES    |
+  | Weekly client report compile | Henrik    | Weekly    | 2-3 hours   | YES    |
+
+  MEDIUM VALUE (build second):
+  | Task                         | Who       | Frequency | Manual Time | Skill? |
+  |------------------------------|-----------|-----------|-------------|--------|
+  | Brazil CONAB harvest tracker | Regional  | Monthly   | 1 hour      | YES    |
+  | Argentina BAGE estimates     | Regional  | Bi-weekly | 45 min      | YES    |
+  | Statistics Canada pull       | Regional  | Monthly   | 30 min      | YES    |
+  | Freight rate tracker         | Shipping  | Weekly    | 30 min      | YES    |
+
+  LOWER VALUE (nice to have):
+  | Bloomberg chart formatting   | All       | Daily     | 15 min      | MAYBE  |
+  | Email summary distributions  | Henrik    | Weekly    | 20 min      | MAYBE  |
+
+  ROLLOUT STRATEGY (avoid the "failed IT initiative" pattern):
+
+  DON'T DO THIS:
+  ✗ Send an email saying "everyone must use Copilot skills by March"
+  ✗ Schedule a 2-hour mandatory training session
+  ✗ Assign IT to "deploy skills to the team"
+  ✗ Create a Confluence page with 30 setup instructions
+
+  DO THIS INSTEAD:
+  ✓ Week 1-2: Luís and Ana are already using skills. Let them keep
+    going. They're your proof of concept.
+  ✓ Week 3: In the Monday team meeting, have Luís demo his export
+    inspections skill live. 2 minutes. Don't explain the technology
+    — just show the result. The team will see him type one sentence
+    and get a formatted table in 10 seconds.
+  ✓ Week 3-4: Ask 1-2 more volunteers: "What's the most tedious
+    part of your week?" Sit with them for 15 minutes. Build their
+    first skill together (Luís can help).
+  ✓ Week 5-8: As skills get built, they're shared on your team's
+    GitLab. New analysts can install a colleague's skill in one
+    command. The Crop Progress skill that one person builds is now
+    available to all 9 people.
+  ✓ Month 3+: Organic adoption. People who see colleagues finishing
+    work faster will ask how. Nobody needs to be forced.
+
+  THE KEY INSIGHT:
+  The 90-minute IT webinar failed because it taught the TOOLS
+  (VS Code, Git, Copilot). People don't care about tools. They care
+  about: "how do I get my Monday summary done faster?"
+
+  agent-skill-creator succeeds because it starts from the WORKFLOW,
+  not the TOOL. The analyst describes what they do. The skill gets
+  built. They use it. They never need to learn VS Code features, Git
+  commands, or Python syntax. The tool becomes invisible.
+
+Henrik: That makes sense. But I have a concern — if everyone builds their own skills, we'll end up with 15 different export trackers that do slightly different things. How do we keep it organized?
+
+Copilot:
+
+  Great concern. Here's how to structure it:
+
+  TEAM SKILL LIBRARY (on your GitLab):
+
+  Create one GitLab group: gitlab.globalagri.com/sd-team/skills/
+  Inside it, one repository per skill:
+
+  sd-team/skills/
+  ├── export-inspections-skill/     ← Luís built this
+  ├── wasde-extractor-skill/        ← Ana built this
+  ├── crop-progress-skill/          ← Next to build
+  ├── psd-balance-updater-skill/    ← Next to build
+  ├── cftc-positioning-skill/       ← Next to build
+  └── weekly-report-compiler-skill/ ← Henrik's, calls others
+
+  RULES:
+  1. ONE skill per distinct workflow (no duplicates)
+  2. The person who does the task builds the skill (with help)
+  3. Skills are reviewed by the team before "official" adoption
+  4. Henrik (you) approves which skills go into the team library
+  5. Everyone installs from the team library, not personal repos
+
+  This is where GitLab finally makes sense to your team. Not as a
+  "code repository" (which sounds scary) but as a "shared skill
+  library" (which sounds useful). Your analysts don't need to learn
+  Git commands — they install skills with one command:
+
+    /agent-skill-creator install gitlab.globalagri.com/sd-team/skills/crop-progress-skill
+
+  GitLab becomes the team's knowledge base, not a developer tool.
+
+
+=============================================================
+PHASE 4: AG MODELLING DESK — "I HAVE MATLAB, WHY DO I NEED THIS?"
+=============================================================
+
+Dr. Carla Ribeiro is skeptical. Her Ag Modelling team has PhDs in
+econometrics. They already code — in MATLAB, R, and some Python.
+They don't need Copilot to help them write for loops. But she has a
+different problem: nobody can reproduce her team's work.
+
+Carla walks into Henrik's Monday meeting late. She hears Luís demo
+his export inspections skill. She's unimpressed — "that's just a
+CSV download script." But afterwards she asks Luís a question:
+
+Carla: "Can that skill thing work for something more complex? My
+team's yield model is a 4,000-line MATLAB script that takes 14 input
+files, runs 300 regressions, and produces a 50-page PDF. Only two
+people on my team understand the full pipeline. If either of them
+leaves, we're in serious trouble. Could I turn that into a 'skill'?"
+
+Luís: "I think so. Talk to Copilot about it."
+
+Carla (in VS Code Copilot Chat): /agent-skill-creator I run the Ag Modelling desk. We have a yield forecasting model built in MATLAB that's been evolving for 6 years. It's 4,200 lines of MATLAB code across 23 .m files. It ingests weather data (temperature, precipitation, soil moisture from 14 state-level stations), USDA planting progress, historical yield data from NASS, and satellite NDVI from our Databricks lake. It runs 300+ regressions (one per crop reporting district) and produces yield estimates for corn and soybeans at district, state, and national level. The output is a PDF with maps, charts, and a summary table. The problem: only 2 of my 8 people fully understand the pipeline. The code has no documentation, no comments, file naming is cryptic (run_v3b_final.m, carlos_fix_sept2024.m), and it breaks every time USDA changes their CSV format. I don't want to rewrite the model — it works and it's validated against 40 years of data. I want to WRAP it in something that makes it understandable, runnable, and maintainable by the whole team. Is that something a skill can do? The MATLAB code is here: models/yield-forecaster/ and the input data is on Databricks: agri_lake.weather.station_daily, agri_lake.usda.planting_progress, agri_lake.satellite.ndvi_weekly
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading models/yield-forecaster/ (23 .m files, 4,200 lines)...
+  Analyzing file dependencies and execution order...
+  Connecting to Databricks to inspect table schemas...
+
+  This is a MODEL WRAPPING problem, not a model building problem.
+  The MATLAB code works — don't touch the math. What's missing is:
+  (1) documentation of what each file does, (2) a clear execution
+  pipeline (what runs in what order), (3) input validation (detect
+  when USDA changes their CSV format BEFORE it breaks the model),
+  (4) a single entry point so anyone can run it, and (5) connection
+  to Databricks so inputs come from the shared lake instead of 14
+  CSV files on someone's desktop.
+
+  From analyzing your 23 .m files, here's the execution graph I
+  reconstructed:
+
+  STAGE 1 — DATA INGESTION (5 files):
+    load_weather_data.m         ← reads 14 CSVs from data/weather/
+    load_planting_progress.m    ← reads USDA planting CSV
+    load_historical_yields.m    ← reads NASS yield CSV
+    load_ndvi.m                 ← reads satellite NDVI CSV
+    merge_inputs.m              ← joins all inputs by CRD code + date
+
+  STAGE 2 — PREPROCESSING (4 files):
+    calc_gdd.m                  ← growing degree days from temperature
+    calc_drought_index.m        ← custom drought stress metric
+    create_lagged_vars.m        ← 1-4 week lags for all weather vars
+    normalize_features.m        ← z-score normalization
+
+  STAGE 3 — MODEL EXECUTION (8 files):
+    run_v3b_final.m             ← MAIN regression loop (300 CRDs)
+    carlos_fix_sept2024.m       ← hotfix for Iowa CRDs (Carlos fixed
+                                   a coefficient sign error in Sep 2024)
+    handle_missing_crds.m       ← fallback for CRDs with < 20yr history
+    state_aggregator.m          ← CRD → state weighted average
+    national_aggregator.m       ← state → national weighted average
+    confidence_intervals.m      ← bootstrap CIs for each estimate
+    residual_diagnostics.m      ← model fit statistics
+    cross_validation.m          ← leave-one-out CV (runs on demand)
+
+  STAGE 4 — OUTPUT (6 files):
+    generate_maps.m             ← choropleth maps by CRD
+    generate_charts.m           ← time series, scatter, residual plots
+    generate_summary_table.m    ← the headline numbers table
+    format_pdf.m                ← compile everything into PDF
+    export_to_excel.m           ← raw numbers for other teams
+    email_distribution.m        ← send PDF to distribution list
+
+  NOTE: carlos_fix_sept2024.m is called inside run_v3b_final.m at
+  line 847 with a comment "% CARLOS FIX - DO NOT REMOVE". This is a
+  targeted coefficient correction for 12 Iowa CRDs where the original
+  regression had a sign error on the drought interaction term. It's
+  valid — the fix improves out-of-sample R² from 0.71 to 0.84 for
+  those districts. But it should be documented properly, not hidden
+  as a hotfix with a scary comment.
+
+  Building the WRAPPER skill (not replacing the MATLAB code):
+
+  yield-model-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── pipeline_runner.py        # Orchestrates the 4-stage MATLAB
+  │   │                             #   pipeline from Python. Calls
+  │   │                             #   MATLAB via subprocess or MATLAB
+  │   │                             #   Engine API for Python
+  │   ├── databricks_ingestor.py    # Pull inputs from Databricks tables
+  │   │                             #   instead of desktop CSVs. Writes
+  │   │                             #   to the same format MATLAB expects
+  │   ├── input_validator.py        # Check all 14 inputs exist, have
+  │   │                             #   expected columns, no nulls in
+  │   │                             #   critical fields. CATCH format
+  │   │                             #   changes before MATLAB crashes
+  │   ├── format_change_detector.py # Compare incoming CSV headers to
+  │   │                             #   expected schema. Alert if USDA
+  │   │                             #   renames/adds/removes columns
+  │   ├── output_validator.py       # Sanity checks: are yields within
+  │   │                             #   historical range? Any NaN outputs?
+  │   │                             #   Any CRDs missing from results?
+  │   ├── databricks_writer.py      # Write model outputs back to
+  │   │                             #   Databricks: agri_lake.models.yield_estimates
+  │   │                             #   so other teams can query results
+  │   └── run_report.py             # Generate the PDF + Excel + email
+  ├── references/
+  │   ├── pipeline-architecture.md  # The 4-stage execution graph above,
+  │   │                             #   with file-level documentation
+  │   ├── file-by-file-docs.md      # What each .m file does, inputs,
+  │   │                             #   outputs, known issues
+  │   ├── carlos-fix-explained.md   # Full explanation of the Iowa CRD
+  │   │                             #   coefficient fix (what, why, when)
+  │   ├── input-schemas.md          # Expected format for all 14 inputs
+  │   ├── output-schemas.md         # What the model produces
+  │   ├── databricks-tables.md      # Databricks table names, schemas,
+  │   │                             #   refresh schedules
+  │   └── methodology.md            # Statistical methodology reference
+  ├── assets/
+  │   ├── input_schemas.json        # Machine-readable input validation
+  │   ├── output_ranges.json        # Plausible yield ranges by CRD
+  │   ├── crd_weights.json          # CRD → state aggregation weights
+  │   └── distribution_list.json    # Email recipients
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (Databricks credentials via corporate SSO)
+  Installed at: ~/.agents/skills/yield-model-skill
+
+  KEY OUTCOME: Your MATLAB code is untouched. The skill wraps it with:
+  - Documentation (your team can now read pipeline-architecture.md
+    instead of reverse-engineering 23 cryptic files)
+  - Databricks integration (inputs from the shared lake, outputs
+    written back for other teams)
+  - Input validation (catches USDA format changes before they crash
+    the model at line 2,847 of run_v3b_final.m with "Index exceeds
+    matrix dimensions")
+  - A single command to run the entire pipeline:
+    /yield-model-skill Run the weekly yield update
+
+Carla: Wait — it figured out the execution order from analyzing the MATLAB code? And it found Carlos's hotfix and explained it?
+
+Copilot:
+
+  Yes. The file dependencies are traceable from the load() and
+  save() calls in each .m file. run_v3b_final.m loads 4 .mat files
+  that are created by the preprocessing stage. The preprocessors
+  load .mat files from the ingestion stage. The graph is:
+
+    load_*.m → merge_inputs.m → calc_*.m / create_lagged_vars.m →
+    normalize_features.m → run_v3b_final.m (+ carlos_fix) →
+    aggregators → outputs
+
+  And Carlos's fix is clearly a targeted coefficient override — lines
+  847-893 of run_v3b_final.m check if the CRD code is in a hardcoded
+  list of 12 Iowa CRDs, and if so, multiply the drought interaction
+  coefficient by -1. The comment says "sign error in original fitting,
+  verified with Carlos Sept 2024." That's important institutional
+  knowledge that was buried in a code comment. Now it's in a
+  standalone document (carlos-fix-explained.md) that anyone can read.
+
+  If Carlos leaves, the knowledge stays.
+
+Carla: And Databricks — right now my team downloads CSVs from Databricks manually and puts them in a folder. This would pull directly?
+
+Copilot:
+
+  Exactly. Here's what changes:
+
+  BEFORE (current workflow):
+  1. Someone opens Databricks in a browser
+  2. Navigates to agri_lake.weather.station_daily
+  3. Runs a manual SQL query with this month's date range
+  4. Clicks "Download CSV"
+  5. Renames the file, moves it to models/yield-forecaster/data/weather/
+  6. Repeats for the other 13 input files
+  7. Runs the MATLAB model
+  8. If USDA changed a column name → MATLAB crashes at some random line
+  9. Someone debugs for 2 hours, finds the column rename, fixes it
+
+  AFTER (with the skill):
+  1. Type: /yield-model-skill Run the weekly yield update
+  2. The skill pulls all 14 inputs from Databricks via SQL
+  3. Validates all inputs before passing to MATLAB
+  4. If a column was renamed, tells you BEFORE crashing:
+     "⚠️ USDA planting_progress table: column 'pct_planted' has been
+     renamed to 'planted_pct'. Updating the mapper. No action needed."
+  5. Runs the MATLAB pipeline
+  6. Validates outputs (yields within historical range)
+  7. Writes results to agri_lake.models.yield_estimates
+  8. Generates PDF and emails it
+
+  Steps 2-8 happen in ~4 minutes (mostly MATLAB execution time).
+  The S&D team can then query your yield estimates directly from
+  Databricks without waiting for you to email the PDF.
+
+
+=============================================================
+PHASE 5: PRICE ASSESSMENT — COPILOT CLI FOR THE TERMINAL-SHY
+=============================================================
+
+The Price Assessment desk has the most extreme case of tool
+paralysis. Tomoko Watanabe's 8 analysts live in Bloomberg Terminal
+and Refinitiv Eikon — powerful tools with their own scripting
+environments, but completely disconnected from VS Code, Python, and
+databases. They've never opened a terminal.
+
+But Tomoko has a daily pain point that none of her Bloomberg tools
+solve: every morning, she manually collects broker price indications
+from 6 different email chains, a Bloomberg chat group, a WhatsApp
+group (yes, really), and a shared Excel file. She normalizes the
+units (some brokers quote FOB, others CIF; some in $/MT, others in
+cents/bushel), calculates the bid-ask midpoint, and publishes the
+firm's "daily assessment" — a single reference price that trading
+desks and clients rely on.
+
+The morning assessment takes 90 minutes, must be published by 8am,
+and she's been doing it the same way for 7 years.
+
+Tomoko doesn't want to open VS Code. She doesn't want to see code.
+She's heard about "Copilot CLI" — the terminal tool that IT
+installed. She asks the IT Slack channel:
+
+Tomoko (in #ai-tools-support): "I've heard there's a way to use
+Copilot from the terminal, without VS Code. How do I open it?"
+
+IT Support: "Open Terminal on your Mac (it's in Applications >
+Utilities), then type 'copilot' and press Enter."
+
+Tomoko opens Terminal for the first time. She sees a black window
+with a blinking cursor. She types "copilot" and presses Enter.
+
+
+Tomoko (in Copilot CLI): I'm a price assessment analyst. Every morning I have to collect broker price indications from 6 email chains, normalize the units, and produce our firm's daily physical soybean assessment. Can you help me automate this? I don't know how to code. I just want to describe what I do and have it work.
+
+Copilot CLI:
+
+  Yes. Let me first install a tool that will help us turn your
+  workflow into something reusable. One moment...
+
+  Installing agent-skill-creator...
+
+  curl -fsSL https://raw.githubusercontent.com/FrancyJGLisboa/agent-skill-creator/main/scripts/bootstrap.sh | sh
+
+  ✓ Installed. Detecting tools: copilot-cli... found.
+
+  Now describe your morning routine in as much detail as you can.
+  Include the data sources, the steps, and what the final output
+  looks like.
+
+Tomoko: /agent-skill-creator Every morning between 6:30-8:00am I produce the firm's daily physical soybean price assessment. Here's exactly what I do: (1) I open Outlook and find the latest indication emails from 6 brokers — Cargill, Bunge, ADM, Cofco, LDC, and Viterra. They send indications overnight for FOB Santos, FOB Paranaguá, and CIF China soybean prices. Some quote in $/MT, some in cents/bushel, some in Brazilian reais/60kg bag. The emails have no standard format — each broker has their own template. (2) I open our Bloomberg chat group "Physical Soy Indications" where 3 more brokers post real-time numbers. (3) I check a shared Google Sheet where our Singapore desk posts overnight Asia-time indications. (4) I normalize everything to $/MT FOB Santos as the reference point, using the day's BRL/USD exchange rate (from Bloomberg), the FOB-CIF differential (~$28/MT for China route, varies by freight), and the bushel-to-MT conversion. (5) I calculate: bid midpoint, ask midpoint, bid-ask spread, and the daily change from yesterday. (6) I also compare to the CBOT front-month settlement + basis to derive "implied basis." (7) I produce a one-page "DAILY PHYSICAL ASSESSMENT" that gets published to the trading floor, 4 client distribution lists, and posted to our internal dashboard. (8) Deadline is 8:00am sharp — the trading desks wait for this before making physical offers. Here's yesterday's assessment: references/daily-assessment-sample.pdf and here's my normalization spreadsheet: references/price-normalization.xlsx
+
+Copilot CLI (loading agent-skill-creator skill):
+
+  Reading references/daily-assessment-sample.pdf...
+  Reading references/price-normalization.xlsx...
+
+  This is a data collection + normalization + publishing pipeline
+  with strict time constraints. The hardest part is the EXTRACTION
+  — broker emails are unstructured, Bloomberg chat is messy, and
+  the Google Sheet is semi-structured. Let me build a skill that
+  handles the messy inputs.
+
+  Building...
+
+  daily-assessment-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── email_collector.py        # Parse indication emails from
+  │   │                             #   Outlook (via MAPI or EWS API)
+  │   │                             #   using broker-specific templates
+  │   ├── broker_parsers/
+  │   │   ├── cargill.py            # Cargill indication format
+  │   │   ├── bunge.py              # Bunge format (they use PDF attachments)
+  │   │   ├── adm.py                # ADM format
+  │   │   ├── cofco.py              # Cofco (sometimes in CNY)
+  │   │   ├── ldc.py                # Louis Dreyfus format
+  │   │   └── viterra.py            # Viterra format
+  │   ├── gsheet_reader.py          # Pull Singapore desk indications
+  │   ├── normalizer.py             # All prices → $/MT FOB Santos
+  │   │                             #   (FX rates, freight diffs, unit
+  │   │                             #   conversions)
+  │   ├── fx_fetcher.py             # BRL/USD from Bloomberg or fallback
+  │   │                             #   to Central Bank API (BCB)
+  │   ├── basis_calculator.py       # CBOT + basis → implied physical
+  │   ├── assessment_builder.py     # Daily assessment document
+  │   ├── publisher.py              # Email to 4 dist lists, post to
+  │   │                             #   internal dashboard API
+  │   └── audit_trail.py            # Log every input price and its
+  │   │                             #   source for compliance
+  ├── references/
+  │   ├── broker-formats.md         # How each broker formats indications
+  │   ├── normalization-rules.md    # Unit conversions, freight diffs
+  │   ├── fob-cif-differentials.md  # Route-specific freight adjustments
+  │   └── methodology.md            # Assessment methodology (auditable)
+  ├── assets/
+  │   ├── broker_templates.json     # Regex/patterns for each broker
+  │   ├── unit_conversions.json     # BRL/bag → $/MT, ¢/bu → $/MT
+  │   ├── freight_diffs.json        # FOB Santos, FOB Paranaguá, CIF China
+  │   ├── distribution_lists.json   # 4 client groups
+  │   └── previous_assessments.json # Rolling 30-day history
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (Outlook access via corporate SSO, Google Sheet
+            via service account)
+  Installed at: ~/.agents/skills/daily-assessment-skill
+
+  ⚠️ NOTE ON BLOOMBERG CHAT: Programmatic access to Bloomberg chat
+  requires Bloomberg B-PIPE or SAPI license, which your firm may
+  or may not have. If not, the skill will prompt you to manually
+  paste the chat indications (30 seconds vs. the current scrolling-
+  through-chat approach). I've designed it so the Bloomberg chat
+  input is optional — the skill works with email + Google Sheet
+  alone and flags if Bloomberg data is missing.
+
+
+--- 6:35am the next morning, Tomoko tries the skill ---
+
+Tomoko (in Terminal): /daily-assessment-skill Morning run
+
+Copilot CLI (loading daily-assessment-skill):
+
+  DAILY PHYSICAL ASSESSMENT — March 5, 2026
+  Collection started at 6:35am ET
+
+  STEP 1: Collecting broker indications...
+
+  | Source           | Status  | Prices Found | Last Updated |
+  |------------------|---------|--------------|--------------|
+  | Cargill (email)  | ✓       | 3 (FOB×2, CIF×1) | 5:48am  |
+  | Bunge (email)    | ✓       | 2 (FOB Santos, FOB Paranaguá) | 6:02am |
+  | ADM (email)      | ✓       | 2 (FOB Santos, CIF China) | 5:55am |
+  | Cofco (email)    | ✓       | 3 (FOB×2, CIF×1) | 6:12am  |
+  | LDC (email)      | ✓       | 2 (FOB Santos, FOB Paranaguá) | 5:30am |
+  | Viterra (email)  | ⚠️ MISSING | —        | No email found |
+  | Singapore desk   | ✓       | 4 (CIF China×3, CIF SEA×1) | 4:15am |
+  | Bloomberg chat   | ⏭️ SKIPPED | (manual entry available) |  |
+
+  ⚠️ Viterra hasn't sent their indication yet. This sometimes happens
+  — they send late on Wednesdays (their weekly team meeting morning).
+  Proceeding with 6 of 7 email sources. The assessment will note
+  "Viterra: not received at time of publication."
+
+  Do you want to manually paste the Bloomberg chat indications, or
+  proceed without them? [Paste / Skip / Wait 15min]
+
+Tomoko: Skip, let's go with what we have
+
+Copilot CLI:
+
+  STEP 2: Normalizing to $/MT FOB Santos...
+
+  FX rate: BRL/USD = 5.1842 (BCB, 6:30am fixing)
+  Freight diff: FOB Santos → CIF China = $28.50/MT (Baltic, yesterday)
+  CBOT May soybeans: $10.9450/bu = $402.01/MT (yesterday's settle)
+
+  RAW INDICATIONS (as received):
+
+  | Broker   | Product          | Raw Price       | Raw Unit        |
+  |----------|------------------|-----------------|-----------------|
+  | Cargill  | FOB Santos Apr   | +142/+148 c/bu  | CBOT basis, ¢/bu|
+  | Cargill  | FOB Paranaguá Apr| +138/+145 c/bu  | CBOT basis, ¢/bu|
+  | Cargill  | CIF China May    | $430/$436       | $/MT outright   |
+  | Bunge    | FOB Santos Apr   | +140/+146 c/bu  | CBOT basis, ¢/bu|
+  | Bunge    | FOB Paranaguá Apr| +135/+142 c/bu  | CBOT basis, ¢/bu|
+  | ADM      | FOB Santos Apr   | R$142.50/R$145.80| BRL per 60kg bag|
+  | ADM      | CIF China May    | $428/$434       | $/MT outright   |
+  | Cofco    | FOB Santos Apr   | $426/$432       | $/MT outright   |
+  | Cofco    | FOB Paranaguá Apr| $422/$428       | $/MT outright   |
+  | Cofco    | CIF China May    | $431/$437       | $/MT outright   |
+  | LDC      | FOB Santos Apr   | +141/+147 c/bu  | CBOT basis, ¢/bu|
+  | LDC      | FOB Paranaguá Apr| +136/+143 c/bu  | CBOT basis, ¢/bu|
+  | SG Desk  | CIF China May    | $429/$435       | $/MT outright   |
+  | SG Desk  | CIF China Jun    | $425/$431       | $/MT outright   |
+  | SG Desk  | CIF China Jul    | $420/$427       | $/MT outright   |
+  | SG Desk  | CIF SEA May      | $432/$438       | $/MT outright   |
+
+  NORMALIZED TO $/MT FOB SANTOS:
+
+  | Broker   | Bid ($/MT) | Ask ($/MT) | Mid ($/MT) | Method              |
+  |----------|------------|------------|------------|---------------------|
+  | Cargill  | $424.23    | $430.44    | $427.34    | CBOT + basis        |
+  | Bunge    | $423.50    | $429.71    | $426.61    | CBOT + basis        |
+  | ADM      | $425.12    | $430.45    | $427.79    | BRL/bag → $/MT      |
+  | Cofco    | $426.00    | $432.00    | $429.00    | Already $/MT        |
+  | LDC      | $423.87    | $430.08    | $426.97    | CBOT + basis        |
+  | SG Desk  | $401.00*   | $407.00*   | $404.00*   | CIF−freight = FOB   |
+  |----------|------------|------------|------------|---------------------|
+  | MEAN     | $423.95    | $430.11    | $427.03    |                     |
+  | MEDIAN   | $424.23    | $430.44    | $427.34    |                     |
+
+  * Singapore desk CIF-to-FOB conversion uses $28.50 freight.
+    Their CIF $429/$435 → FOB $401/$407. This is notably below the
+    direct FOB indications. Possible explanations: (a) different
+    freight assumption, (b) their quotes include older cargo, or
+    (c) Asia-time pricing was weaker than current. Flagged for review.
+
+  STEP 3: Assessment calculation...
+
+  DAILY PHYSICAL SOYBEAN ASSESSMENT — March 5, 2026
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  FOB SANTOS — SOYBEANS — APRIL SHIPMENT                 │
+  │                                                         │
+  │  Assessment:    $427.00 / $430.00 $/MT                  │
+  │  Midpoint:      $428.50 $/MT                            │
+  │  Daily change:  +$2.50 (from $426.00 yesterday)         │
+  │                                                         │
+  │  CBOT basis:    +142 / +148 ¢/bu over May               │
+  │  Implied basis: +144.5 ¢/bu (midpoint)                  │
+  │  Basis change:  +3.5 ¢/bu (basis strengthened)          │
+  │                                                         │
+  │  FOB PARANAGUÁ — APRIL SHIPMENT                         │
+  │  Assessment:    $422.50 / $428.00 $/MT                  │
+  │  Santos-Paranaguá diff: -$3.25 (normal range: -$2 to -$5)│
+  │                                                         │
+  │  CIF CHINA — MAY SHIPMENT                               │
+  │  Assessment:    $429.50 / $435.50 $/MT                  │
+  │  FOB-CIF spread: $28.75 (freight + insurance)           │
+  │                                                         │
+  │  Sources: Cargill, Bunge, ADM, Cofco, LDC, SG Desk     │
+  │  Missing: Viterra (not received), Bloomberg chat (skipped)│
+  │  Published: 6:42am ET                                   │
+  └─────────────────────────────────────────────────────────┘
+
+  STEP 4: Publishing...
+
+  ✓ Emailed to: Trading Floor distribution (28 recipients)
+  ✓ Emailed to: Client Group A — Institutional (142 recipients)
+  ✓ Emailed to: Client Group B — Corporate (89 recipients)
+  ✓ Emailed to: Client Group C — Internal Research (25 recipients)
+  ✓ Posted to: internal dashboard (dashboard.globalagri.com/assessments)
+  ✓ Audit trail saved: audit/assessment-2026-03-05.json
+
+  Published at 6:42am ET — 78 minutes before the 8:00am deadline.
+
+Tomoko: That took 7 minutes instead of 90. And it caught the
+Singapore desk discrepancy — I would have just averaged it in without
+noticing.
+
+Copilot CLI:
+
+  The Singapore discrepancy is worth investigating. If their freight
+  assumption is $25/MT instead of your $28.50, their FOB-equivalent
+  would be $404/$410 instead of $401/$407 — still below the direct
+  FOB indications but less extreme. You might want to ask the
+  Singapore desk what freight rate they're using.
+
+  Tomorrow morning, just type:
+    /daily-assessment-skill Morning run
+  Same as today. If Viterra's email arrives by then, it'll
+  automatically be included.
+
+
+=============================================================
+PHASE 6: THE DATABRICKS BRIDGE — FROM ISOLATED SKILLS TO
+SHARED DATA INFRASTRUCTURE
+=============================================================
+
+After 6 weeks of individual skill adoption, the three desk heads
+(Henrik, Carla, Tomoko) realize their skills are producing valuable
+outputs that die on individual laptops. Henrik's S&D balance sheets
+are in Excel. Carla's yield estimates are in MATLAB .mat files.
+Tomoko's price assessments are in PDFs. Nobody can query anyone
+else's outputs.
+
+The data team lead (Rajesh Kapoor) gets pulled into a meeting.
+
+Rajesh: "You want me to connect your Copilot skills to Databricks?
+Let me understand what you actually need."
+
+The meeting produces a clear architecture:
+
+Henrik (in VS Code Copilot Chat): /agent-skill-creator We need to build a "bridge skill" that connects our existing skills to Databricks. Right now we have 6 skills running on individual laptops that produce outputs nobody else can access. I want each skill's output to be written to a shared Databricks table so the whole research division can query it. Here's what we need: (1) Luís's export-inspections-skill output → agri_lake.trade.weekly_inspections, (2) Ana's wasde-extractor-skill output → agri_lake.usda.wasde_extracted, (3) Carla's yield-model-skill output → agri_lake.models.yield_estimates (already done), (4) Tomoko's daily-assessment-skill output → agri_lake.prices.physical_assessments, (5) The S&D balance sheets → agri_lake.research.sd_balances. The Databricks workspace is at databricks.globalagri.com. Each analyst has a personal access token in their env as DATABRICKS_TOKEN. The data team has already created the target tables with the right schemas — Rajesh gave us the table definitions: references/databricks-target-schemas.sql
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/databricks-target-schemas.sql...
+
+  This is an integration layer, not a new skill. I'll create a shared
+  "Databricks publisher" module that any skill can import, plus
+  modify each existing skill to write outputs to Databricks after
+  producing local results.
+
+  The pattern is simple:
+  1. Skill runs locally (unchanged behavior — still produces the
+     Excel/PDF/report the analyst expects)
+  2. AFTER local output, a new step writes structured results to
+     the corresponding Databricks table
+  3. Write is idempotent (re-running the skill for the same date
+     overwrites, doesn't duplicate)
+  4. If Databricks is unreachable (network issue, token expired),
+     the skill still produces local output and logs a warning.
+     It never fails just because Databricks is down.
+
+  Building...
+
+  databricks-bridge-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── databricks_client.py      # Databricks SQL connector wrapper
+  │   │                             #   (auth via DATABRICKS_TOKEN, retry,
+  │   │                             #   timeout, error handling)
+  │   ├── table_writer.py           # Generic write-to-table function
+  │   │                             #   with schema validation and
+  │   │                             #   upsert logic (MERGE statement)
+  │   ├── schema_validator.py       # Validate DataFrame columns match
+  │   │                             #   target table schema before write
+  │   ├── publishers/
+  │   │   ├── inspections_pub.py    # export-inspections → weekly_inspections
+  │   │   ├── wasde_pub.py          # wasde-extractor → wasde_extracted
+  │   │   ├── yield_pub.py          # yield-model → yield_estimates
+  │   │   ├── assessment_pub.py     # daily-assessment → physical_assessments
+  │   │   └── balance_pub.py        # S&D balances → sd_balances
+  │   └── health_check.py           # Verify Databricks connectivity,
+  │                                 #   table existence, token validity
+  ├── references/
+  │   ├── target-schemas.md         # Table definitions (from Rajesh)
+  │   ├── upsert-logic.md           # How MERGE works, conflict resolution
+  │   ├── error-handling.md         # What happens when Databricks is down
+  │   └── methodology.md
+  ├── assets/
+  │   ├── table_schemas.json        # Machine-readable target schemas
+  │   └── databricks_config.json    # Workspace URL, catalog, schema names
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (DATABRICKS_TOKEN from env, MERGE-only writes)
+  Installed at: ~/.agents/skills/databricks-bridge-skill
+
+  I've also updated each existing skill to call the bridge after
+  producing local output. The integration is OPTIONAL — each skill
+  checks if databricks-bridge-skill is installed. If it is, outputs
+  go to Databricks. If not, the skill works exactly as before.
+
+  Now when Luís runs his Monday update:
+    /export-inspections-skill Run the Monday update
+  the inspection data lands in BOTH his local Excel AND
+  agri_lake.trade.weekly_inspections on Databricks.
+
+  And when a junior analyst on ANY desk wants to query last week's
+  physical soybean assessment alongside the WASDE S&D numbers and the
+  yield model estimates, they can write a single SQL query in
+  Databricks that joins all three tables. Data that used to live in
+  3 different analysts' laptops in 3 different formats is now in one
+  queryable place.
+
+
+=============================================================
+PHASE 7: THREE MONTHS LATER — THE CTO DASHBOARD
+=============================================================
+
+The CTO pulls up the adoption dashboard again. It's been 3 months
+since Luís installed agent-skill-creator.
+
+  | Tool           | Active Users | Before | Change |
+  |----------------|-------------|--------|--------|
+  | VS Code        | 19          | 4      | +375%  |
+  | GitHub Copilot | 16          | 2      | +700%  |
+  | Copilot CLI    | 6           | 0      | ∞      |
+  | GitLab         | 12          | 1      | +1100% |
+  | Databricks     | 22          | 3      | +633%  |
+
+  Skills in the shared GitLab library: 11
+  Total skill invocations (last 30 days): 847
+  Estimated hours saved per month: ~180
+
+  Most-used skills:
+  1. daily-assessment-skill (Tomoko's team) — 22 runs/day × 22 days = 484
+  2. export-inspections-skill (Luís) — 4 runs/week × 12 weeks = 48
+  3. agdb-query-assistant-skill (all desks) — avg 6 queries/day = 132
+  4. wasde-extractor-skill (Ana) — 3 runs/month = 9
+  5. yield-model-skill (Carla's team) — 4 runs/month = 16
+
+What changed:
+
+  THE 90-MINUTE WEBINAR taught people about TOOLS.
+  agent-skill-creator taught people about their WORKFLOWS.
+
+  Nobody woke up wanting to learn VS Code. But Luís wanted his Monday
+  summary to take 10 seconds. Ana wanted to stop copy-pasting from
+  PDFs. Tomoko wanted to publish her assessment before 7am. Carla
+  wanted her model to be reproducible.
+
+  The tools (VS Code, Copilot, GitLab, Databricks) were the means,
+  not the end. agent-skill-creator was the on-ramp that connected
+  "I have a tedious workflow" to "now there's a tool for that."
+
+  GitLab adoption went from 1 to 12 not because people learned Git,
+  but because they wanted to INSTALL their colleague's skills:
+    /agent-skill-creator install gitlab.globalagri.com/sd-team/skills/crop-progress-skill
+  They never typed 'git clone' or 'git pull' or 'git commit'. They
+  used agent-skill-creator as the interface, and GitLab was just
+  where the skills lived.
+
+  Databricks adoption went from 3 to 22 because the bridge skill
+  made it the SHARED DESTINATION for every skill's output. Analysts
+  who never wrote SQL started asking the agdb-query-assistant-skill
+  to pull data from Databricks:
+    /agdb-query-assistant-skill Show me yesterday's physical assessment
+    next to the latest yield estimate for US soybeans
+  They never opened the Databricks UI. They didn't need to.
+
+THE DOG NO LONGER SEES A CASTLE.
+
+The dog sees a door. And the door says:
+  "Tell me what you do every day. I'll make it faster."
+
+That's all agent-skill-creator ever needed to be. Not a developer
+tool. Not an AI platform. Not a framework.
+
+A door.
