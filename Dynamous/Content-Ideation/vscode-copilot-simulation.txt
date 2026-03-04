@@ -692,3 +692,588 @@ New team member joins. The team lead sends them one message on Slack:
 
 7 commands. 5 minutes. The new hire has the entire team's research
 infrastructure on their machine, across every AI tool they use.
+
+
+=============================================================
+EXPANDED: PSD DATABASE + GLOBAL TRADE TRACKER (GTT) SKILLS
+=============================================================
+
+The team has API credentials for two critical data platforms:
+
+  PSD_API_KEY        — USDA Foreign Agricultural Service Production,
+                       Supply and Distribution database. Global supply/demand
+                       balances for every commodity by country and marketing year.
+                       Endpoint: apps.fas.usda.gov/opendatawebv2/
+
+  GTT_USER_ID        — Global Trade Tracker login. 133 countries, HS 8-digit
+  GTT_PASSWORD         trade flow data, monthly updates. REST API at
+                       globaltradetracker.com/api/rest/
+
+These credentials are set as environment variables. The skills never
+hardcode them — they read from env at runtime.
+
+
+=============================================================
+SKILL 5: Global S&D Balance Sheet Builder (PSD)
+=============================================================
+
+The senior analyst who covers global grains:
+
+User: /agent-skill-creator I use the USDA PSD database to build global supply and demand balance sheets for soybeans, corn, and wheat. For each commodity I pull production, beginning stocks, imports, domestic consumption, exports, and ending stocks — broken down by the top 10 producing and consuming countries plus a "rest of world" aggregate. I compare the current marketing year estimates to the previous 5 years to identify trends. I also calculate stocks-to-use ratios and flag any country where ending stocks changed more than 10% month-over-month — that usually signals a USDA revision worth investigating. The PSD API key is in my env as PSD_API_KEY. Here's my current Python notebook that does this manually: notebooks/psd-balance-sheets.ipynb
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading notebooks/psd-balance-sheets.ipynb...
+
+  I see your workflow: you call the PSD API for each commodity/country
+  combination, pivot the data into balance sheet format, compute derived
+  metrics, and render tables in a Jupyter notebook. Let me formalize this.
+
+  Implicit requirements I've identified:
+  - PSD API authentication: API key passed as header (X-Api-Key) to
+    apps.fas.usda.gov/opendatawebv2/ endpoints
+  - Commodity codes: 0440000 (soybeans), 0440000 (soybean meal/oil are
+    separate), 0410000 (corn), 0410000 (wheat has multiple codes by class)
+  - Marketing years differ by commodity and country: US corn is Sep-Aug,
+    Brazil soy is Feb-Jan, Argentina wheat is Dec-Nov
+  - "Top 10" countries shift over time — should be dynamic based on latest
+    production rankings, not hardcoded
+  - PSD data updates monthly (around the WASDE release) — need to track
+    the revision date to know if data is current
+  - Some PSD attributes are in 1000 MT, others in MT — unit normalization
+  - World totals in PSD double-count intra-EU trade — need EU-27 aggregate
+    handling
+  - The 10% month-over-month change alert needs to compare the same
+    attribute for the same country between the current and previous PSD
+    update, not between marketing years
+
+  Building...
+
+  psd-balance-sheet-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── psd_client.py            # PSD API wrapper (auth, pagination, rate limits)
+  │   ├── balance_sheet.py         # S&D balance sheet builder (country × commodity)
+  │   ├── country_rankings.py     # Dynamic top-N producer/consumer rankings
+  │   ├── stocks_to_use.py        # Stocks-to-use ratio calculator + historical
+  │   ├── revision_detector.py    # Month-over-month revision alerts (>10% change)
+  │   ├── marketing_years.py      # Country-specific marketing year calendar
+  │   └── report_builder.py       # PDF/HTML balance sheet report
+  ├── references/
+  │   ├── psd-commodity-codes.md  # USDA commodity code mappings
+  │   ├── psd-attribute-codes.md  # Production, consumption, trade attribute IDs
+  │   ├── marketing-year-cal.md   # By country and commodity
+  │   ├── eu-aggregation.md       # EU-27 handling rules
+  │   └── methodology.md          # S&D balance sheet conventions
+  ├── assets/
+  │   └── country_mappings.json   # PSD country codes → ISO 3166 + display names
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (PSD_API_KEY read from env, not hardcoded)
+  Installed at: ~/.claude/skills/psd-balance-sheet-skill
+
+
+--- Monthly use right after WASDE release ---
+
+Analyst: /psd-balance-sheet-skill USDA just updated PSD. Pull the full global soybean balance sheet for 2025/26 and compare to last month. Flag any revisions.
+
+Copilot (loading psd-balance-sheet-skill):
+
+  Authenticating with PSD API... (using PSD_API_KEY from env)
+  Pulling soybean data for marketing year 2025/26...
+  Pulling previous month snapshot for revision comparison...
+  Building balance sheet...
+
+  GLOBAL SOYBEAN BALANCE SHEET — 2025/26 (March 2026 USDA update)
+  Units: Million Metric Tons
+
+  PRODUCTION
+  | Country       | Mar Est | Feb Est | Revision | 5yr Avg | vs Avg  |
+  |---------------|---------|---------|----------|---------|---------|
+  | Brazil        | 169.0   | 169.0   | —        | 148.2   | +14.0%  |
+  | United States | 118.8   | 118.8   | —        | 116.4   | +2.1%   |
+  | Argentina     | 50.0    | 52.0    | -2.0  *  | 46.8    | +6.8%   |
+  | China         | 20.7    | 20.7    | —        | 19.1    | +8.4%   |
+  | India         | 13.2    | 12.4    | +0.8  *  | 11.8    | +11.9%  |
+  | Paraguay      | 10.8    | 10.8    | —        | 9.9     | +9.1%   |
+  | Canada        | 7.1     | 7.1     | —        | 6.6     | +7.6%   |
+  | Russia        | 6.8     | 6.8     | —        | 5.9     | +15.3%  |
+  | Ukraine       | 5.4     | 5.4     | —        | 4.2     | +28.6%  |
+  | Bolivia       | 3.3     | 3.4     | -0.1     | 3.1     | +6.5%   |
+  | Rest of World | 22.4    | 22.5    | -0.1     | 21.0    | +6.7%   |
+  | WORLD TOTAL   | 427.5   | 428.9   | -1.4     | 393.0   | +8.8%   |
+
+  REVISION ALERTS:
+  * Argentina production: -2.0 MMT (-3.8%). Drought in Cordoba and
+    Santa Fe provinces during January pod-fill stage. This is the first
+    cut — market expected -1.0 MMT. Further downside risk if February
+    rains don't materialize in southern Buenos Aires province.
+
+  * India production: +0.8 MMT (+6.5%). Late monsoon rains benefited
+    kharif soybean crop in Madhya Pradesh. This is unusual — USDA rarely
+    revises India this late in the season.
+
+  ENDING STOCKS
+  | Country       | Mar Est | Feb Est | Stocks/Use | 5yr Avg S/U |
+  |---------------|---------|---------|------------|-------------|
+  | United States | 10.1    | 10.3    | 8.4%       | 7.2%        |
+  | Brazil        | 37.2    | 37.5    | 23.1%      | 21.8%       |
+  | Argentina     | 24.8    | 26.2    | 42.3%      | 38.1%       |
+  | China         | 33.4    | 33.4    | 29.5%      | 28.0%       |
+  | WORLD TOTAL   | 124.3   | 126.5   | 31.2%      | 29.6%       |
+
+  WORLD STOCKS/USE at 31.2% is slightly above the 5-year average but
+  tightening on the Argentina cut. Another 2 MMT cut to Argentina in April
+  would bring world S/U to 30.7%, which would be the tightest since 2023/24.
+
+  KEY NARRATIVE: World soy balance is comfortable but deteriorating at the
+  margin. The Argentina story is the swing variable. Brazil's record crop
+  is the cushion. Watch the April WASDE for a potential follow-through
+  Argentina cut if March rains disappoint.
+
+  PDF report: reports/psd-soybeans-global-2025-26-march.pdf
+
+
+--- Deeper drill-down ---
+
+Analyst: /psd-balance-sheet-skill Show me China's soybean import history from PSD — last 10 marketing years. I want to see the trajectory.
+
+Copilot:
+
+  Pulling PSD data for China soybean imports, MY 2016/17 through 2025/26...
+
+  CHINA SOYBEAN IMPORTS — 10-Year Trajectory (Million MT)
+
+  | Marketing Year | Imports | YoY Change | Share of World Trade |
+  |----------------|---------|------------|----------------------|
+  | 2016/17        | 93.5    |            | 62.1%                |
+  | 2017/18        | 94.1    | +0.6%      | 60.8%                |
+  | 2018/19        | 82.5    | -12.3%     | 55.2%   ← trade war  |
+  | 2019/20        | 98.5    | +19.4%     | 60.1%                |
+  | 2020/21        | 99.8    | +1.3%      | 59.6%                |
+  | 2021/22        | 91.6    | -8.2%      | 57.4%   ← hog herd  |
+  | 2022/23        | 100.3   | +9.5%      | 60.2%                |
+  | 2023/24        | 105.5   | +5.2%      | 61.0%                |
+  | 2024/25        | 109.0   | +3.3%      | 61.5%                |
+  | 2025/26 (est)  | 106.0   | -2.8%      | 59.8%                |
+
+  OBSERVATIONS:
+  - The 2018/19 dip was the US-China trade war. China diverted to Brazil.
+  - 2021/22 dip was the Chinese hog herd contraction (ASF recovery stall).
+  - The current 2025/26 estimate of 106 MMT is a -2.8% decline — first cut
+    in two years. USDA attributes this to slowing crush margins in China
+    and elevated domestic soybean stocks from the prior year's over-buying.
+  - China's share of world trade peaked at 62% and has been gradually
+    declining as SE Asian crushers (Vietnam, Bangladesh) grow.
+
+  Want me to overlay this against Brazil vs US origin splits from GATS?
+
+
+=============================================================
+SKILL 6: Trade Flow Intelligence (GTT)
+=============================================================
+
+The trade flow analyst creates a skill using Global Trade Tracker:
+
+User: /agent-skill-creator I use Global Trade Tracker to monitor real-time commodity trade flows. My main workflow: I pull monthly import/export data by HS code for soybeans (1201), soybean meal (2304), corn (1005), and wheat (1001) — tracking who's buying from whom, how volumes compare to the same month last year, and whether trade is shifting between origins. For example, if China starts buying more Brazilian soybeans and fewer US soybeans, I need to catch that shift early. I also track minor but growing trade corridors (like Russian wheat to Africa, or Ukrainian corn to Southeast Asia) that could signal structural market changes. GTT credentials are in my env as GTT_USER_ID and GTT_PASSWORD. The GTT REST API is at globaltradetracker.com/api/rest/ — you get a token from /gettoken then use /getreport and /tradedetails. Here's my methodology: references/trade-flow-methodology.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/trade-flow-methodology.pdf...
+
+  Your methodology: origin-destination matrices by commodity, year-over-year
+  volume changes, market share shifts by origin country, and an "emerging
+  corridor" detector that flags any bilateral trade route where volume
+  doubled or tripled in 12 months. Let me build this.
+
+  Implicit requirements:
+  - GTT auth: POST to /api/rest/gettoken with GTT_USER_ID + GTT_PASSWORD,
+    token valid 14 days, cache and refresh as needed
+  - /api/rest/getreport requires: reporter, hscode, impexp, and a time
+    parameter (from/to in YYYY-MM or latestavailablemonths)
+  - HS codes at 4-digit level: 1201 (soybeans), 2304 (soybean meal),
+    1005 (corn), 1001 (wheat). Can drill to 6-digit for specifics
+  - GTT data arrives with ~2-3 month lag for some countries — need to
+    handle uneven reporting periods across reporters
+  - "Mirror data" fallback: when a country hasn't reported yet, use the
+    partner country's mirror data (GTT supports fallbacktomirrordata=true)
+  - Currency: all volumes in MT (not value) for commodity flow analysis
+  - Need to distinguish re-exports from domestic exports (impexp parameter)
+  - EU-27 can be treated as a single entity or individual members — the
+    skill should support both views
+  - The "emerging corridor" detector needs a minimum volume threshold to
+    avoid flagging noise (e.g., 10,000 MT/month minimum)
+
+  Building...
+
+  trade-flow-intel-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── gtt_client.py            # GTT REST API wrapper (auth, token caching,
+  │   │                            #   getreport, tradedetails, error handling)
+  │   ├── origin_dest_matrix.py    # Origin × destination trade matrices
+  │   ├── market_share.py          # Origin market share by importer
+  │   ├── yoy_comparison.py        # Year-over-year volume changes
+  │   ├── corridor_detector.py     # Emerging trade corridor alerts
+  │   ├── mirror_data.py           # Mirror data fallback handler
+  │   ├── seasonal_pattern.py      # Monthly trade seasonality by route
+  │   └── report_builder.py        # Trade flow report (PDF + charts)
+  ├── references/
+  │   ├── hs-codes.md              # 1201, 2304, 1005, 1001 + sub-codes
+  │   ├── gtt-api-reference.md     # Endpoint docs, params, response format
+  │   ├── country-codes.md         # GTT country codes + ISO mappings
+  │   ├── data-lag-calendar.md     # Expected reporting lag by country
+  │   └── methodology.md           # Market share, corridor detection logic
+  ├── assets/
+  │   ├── top_importers.json       # Key importing countries by commodity
+  │   └── top_exporters.json       # Key exporting countries by commodity
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (GTT_USER_ID and GTT_PASSWORD read from env, not hardcoded)
+  Installed at: ~/.claude/skills/trade-flow-intel-skill
+
+  Shared to: github.com/acme-trading/trade-flow-intel-skill
+
+
+--- China's soybean sourcing shift ---
+
+Analyst: /trade-flow-intel-skill Pull the latest soybean (1201) import data for China. Show me the origin breakdown — US vs Brazil vs Argentina vs others — monthly for the last 12 months. I want to see if the sourcing pattern is shifting.
+
+Copilot (loading trade-flow-intel-skill):
+
+  Authenticating with GTT... (using GTT_USER_ID, GTT_PASSWORD from env)
+  Token obtained (valid 14 days, cached).
+  Pulling HS 1201 imports, reporter: China, last 12 available months...
+  Note: China's latest available data is January 2026 (2-month lag).
+
+  CHINA SOYBEAN IMPORTS BY ORIGIN — Feb 2025 to Jan 2026
+  Units: Thousand Metric Tons
+
+  | Month    | Brazil  | USA     | Argentina | Uruguay | Canada | Other | TOTAL   |
+  |----------|---------|---------|-----------|---------|--------|-------|---------|
+  | Feb 2025 | 4,120   | 3,890   | 210       | 85      | 120    | 195   | 8,620   |
+  | Mar 2025 | 5,680   | 2,410   | 340       | 140     | 80     | 210   | 8,860   |
+  | Apr 2025 | 7,230   | 980     | 520       | 190     | 45     | 175   | 9,140   |
+  | May 2025 | 8,410   | 420     | 680       | 210     | 30     | 160   | 9,910   |
+  | Jun 2025 | 9,100   | 310     | 750       | 180     | 25     | 190   | 10,555  |
+  | Jul 2025 | 8,870   | 280     | 610       | 150     | 20     | 170   | 10,100  |
+  | Aug 2025 | 7,640   | 350     | 480       | 120     | 15     | 155   | 8,760   |
+  | Sep 2025 | 5,210   | 1,870   | 320       | 80      | 45     | 140   | 7,665   |
+  | Oct 2025 | 3,180   | 4,560   | 180       | 50      | 190    | 160   | 8,320   |
+  | Nov 2025 | 2,440   | 5,890   | 120       | 40      | 280    | 175   | 8,945   |
+  | Dec 2025 | 2,890   | 5,420   | 150       | 55      | 250    | 190   | 8,955   |
+  | Jan 2026 | 3,540   | 4,680   | 200       | 70      | 210    | 180   | 8,880   |
+  |----------|---------|---------|-----------|---------|--------|-------|---------|
+  | 12M TOTAL| 68,310  | 31,060  | 4,560     | 1,370   | 1,310  | 2,100 | 108,710 |
+  | Share    | 62.8%   | 28.6%   | 4.2%      | 1.3%    | 1.2%   | 1.9%  | 100%    |
+
+  MARKET SHARE vs SAME 12-MONTH PERIOD LAST YEAR:
+  | Origin    | This Year | Last Year | Shift     |
+  |-----------|-----------|-----------|-----------|
+  | Brazil    | 62.8%     | 60.1%     | +2.7 pp   |
+  | USA       | 28.6%     | 31.4%     | -2.8 pp   |
+  | Argentina | 4.2%      | 4.8%      | -0.6 pp   |
+  | Canada    | 1.2%      | 0.8%      | +0.4 pp   |
+
+  ANALYSIS:
+  Brazil gained 2.7 percentage points of China's soybean import market at
+  the expense of the US (-2.8 pp). This is the second consecutive year of
+  share shift toward Brazil.
+
+  Key drivers:
+  1. Brazil's record 169 MMT crop created export price competitiveness —
+     CFR China spread was $8-12/MT cheaper than US Gulf for most of Q2 2025
+  2. US Oct-Jan shipping season saw logistical delays on the Mississippi
+     (low water Sep-Oct) that pushed buyers to book Brazil forward
+  3. Canada is quietly growing — from 0.8% to 1.2% share. Canadian
+     soybeans move through Pacific ports (Vancouver) which is a shorter
+     transit to northern China
+
+  The seasonal pattern is intact (Brazil dominates Apr-Aug, US dominates
+  Oct-Jan) but the crossover points are shifting earlier — Brazil's share
+  started growing in March this year vs April last year, suggesting China
+  is booking Brazilian soybeans further forward.
+
+  RISK FOR US EXPORTERS: If Brazil's 2026/27 crop (planting starts Sep 2026)
+  achieves even 5% growth, the US share of Chinese soybean imports could
+  drop below 27% for the first time since the trade war year.
+
+  Want me to drill into the monthly FOB/CFR price differentials to quantify
+  the price competitiveness driver?
+
+
+--- Emerging corridor detection ---
+
+Analyst: /trade-flow-intel-skill Run the emerging corridor scan for wheat (1001) — which bilateral trade routes have grown the fastest in the last 12 months vs prior year?
+
+Copilot:
+
+  Pulling HS 1001 global trade flows, latest 12 months vs prior 12...
+  Filtering: minimum 10,000 MT/month, growth > 100%...
+
+  EMERGING WHEAT TRADE CORRIDORS — Fastest Growing Routes
+
+  | Exporter     | Importer       | This 12M (KMT) | Prior 12M (KMT) | Growth  |
+  |--------------|----------------|-----------------|-----------------|---------|
+  | Russia       | Algeria        | 4,820           | 2,140           | +125%   |
+  | Russia       | Bangladesh     | 1,560           | 620             | +152%   |
+  | Russia       | Nigeria        | 890             | 280             | +218%   |
+  | Ukraine      | Indonesia      | 2,340           | 1,080           | +117%   |
+  | Ukraine      | Philippines    | 780             | 340             | +129%   |
+  | Australia    | Vietnam        | 1,120           | 480             | +133%   |
+  | Argentina    | Brazil         | 5,410           | 2,890           | +87%    |
+  | Kazakhstan   | Uzbekistan     | 1,890           | 780             | +142%   |
+
+  TOP STRUCTURAL SHIFTS:
+
+  1. RUSSIA → AFRICA (Algeria, Nigeria): Russian wheat is aggressively
+     displacing French wheat in North and West Africa. Algeria historically
+     bought French milling wheat but Russia now offers 12-15% protein hard
+     wheat at $30-40/MT discount. Nigeria's growth is from near zero — this
+     is a new corridor. Russia now supplies 68% of Algeria's wheat imports,
+     up from 41% two years ago.
+
+  2. RUSSIA → BANGLADESH: Bangladesh was a traditional Australian wheat
+     buyer. Russian wheat is now competitive into Chittagong port at $15/MT
+     below Australian APW. This corridor barely existed 3 years ago.
+
+  3. UKRAINE → SOUTHEAST ASIA (Indonesia, Philippines): Ukraine rebuilt
+     Black Sea export logistics post-corridor agreement. Indonesian flour
+     mills are diversifying away from 100% Australian dependence. Ukrainian
+     wheat offers good protein at lower cost via Odessa-Singapore-Jakarta
+     route.
+
+  4. ARGENTINA → BRAZIL: Brazil's wheat self-sufficiency is only ~55%.
+     Argentine wheat fills the gap. The +87% growth is driven by the weak
+     Argentine peso making exports competitive and a below-average Brazilian
+     wheat crop in Rio Grande do Sul.
+
+  LOSERS (corridors that shrank):
+  | Exporter     | Importer       | This 12M (KMT) | Prior 12M (KMT) | Change  |
+  |--------------|----------------|-----------------|-----------------|---------|
+  | France       | Algeria        | 1,240           | 3,100           | -60%    |
+  | Australia    | Bangladesh     | 420             | 890             | -53%    |
+  | USA          | Nigeria        | 310             | 680             | -54%    |
+
+  TAKEAWAY: Russian wheat is structurally reshaping global trade flows.
+  The Black Sea export machine (deep water ports, low production costs,
+  weak ruble) is pushing traditional exporters (France, US, Australia) out
+  of price-sensitive emerging markets. This isn't temporary — it's
+  infrastructure-driven and accelerating.
+
+
+=============================================================
+SKILL 7: PSD + GTT Combined — Supply Chain Risk Monitor
+=============================================================
+
+The research director combines both data sources into a single skill:
+
+User: /agent-skill-creator I need a skill that combines PSD balance sheet data with GTT trade flow data to monitor supply chain risk for our four commodities. The idea: PSD tells us the global supply picture (who's producing, who's short). GTT tells us the trade reality (who's actually shipping to whom). When those two diverge — like when a country's PSD ending stocks are falling but GTT shows they're still exporting at last year's pace — that's an early warning of a future export restriction or price spike. I also want to cross-reference GTT flows against USDA Export Sales (from the FAS Open Data API, same PSD_API_KEY) to see if announced sales are actually being shipped. API credentials: PSD_API_KEY and GTT_USER_ID/GTT_PASSWORD are in my env. See my framework doc: references/supply-chain-risk-framework.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/supply-chain-risk-framework.pdf...
+
+  This is a sophisticated early-warning system. Your framework defines three
+  risk signals: (1) stock depletion + continued exports, (2) export sale
+  commitments that aren't converting to shipments, (3) sudden origin
+  diversification by major importers. Let me build this.
+
+  Implicit requirements:
+  - Must call both PSD API and GTT API, correlate by commodity and country
+  - PSD data is marketing-year based, GTT is calendar-month — need alignment
+  - USDA Export Sales (FAS API, same key) provides weekly US commitments vs
+    shipments — the "commitment-to-shipment" conversion rate is a key metric
+  - Export restriction history: need a reference table of past export bans
+    (Russia 2010, Argentina 2022, India rice 2023) to calibrate risk levels
+  - The divergence detector compares: PSD ending stocks trajectory (shrinking?)
+    vs GTT export volumes (still high?) — when stocks fall below 15% S/U
+    while exports maintain pace, flag as "restriction risk"
+  - Alert hierarchy: GREEN (normal), YELLOW (watch), ORANGE (elevated),
+    RED (imminent restriction risk)
+  - Country-specific export policy knowledge: Russia uses floating export
+    tax, Argentina uses DEX + ROE system, India uses ad-hoc bans
+
+  Building...
+
+  supply-chain-risk-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── psd_client.py            # PSD API wrapper
+  │   ├── gtt_client.py            # GTT API wrapper
+  │   ├── fas_export_sales.py      # USDA FAS Export Sales API
+  │   ├── stock_export_divergence.py  # PSD stocks vs GTT flows comparison
+  │   ├── commitment_tracker.py    # Export sales vs actual shipments
+  │   ├── origin_shift_detector.py # Sudden sourcing changes by importers
+  │   ├── restriction_risk.py      # Export ban/tax probability model
+  │   ├── risk_dashboard.py        # Alert dashboard builder (HTML)
+  │   └── weekly_report.py         # Supply chain risk weekly PDF
+  ├── references/
+  │   ├── restriction-history.md   # Past export bans with triggers/duration
+  │   ├── policy-mechanisms.md     # How each country restricts exports
+  │   ├── risk-thresholds.md       # S/U ratios that historically trigger bans
+  │   ├── psd-gtt-alignment.md     # Marketing year to calendar month mapping
+  │   └── methodology.md           # Full risk framework
+  ├── assets/
+  │   └── restriction_database.json  # Historical export restrictions
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (all 3 credentials read from env)
+  Installed at: ~/.claude/skills/supply-chain-risk-skill
+
+  Shared to: github.com/acme-trading/supply-chain-risk-skill
+
+
+--- Weekly risk scan ---
+
+Research Director: /supply-chain-risk-skill Run the weekly supply chain risk scan across all four commodities. Flag anything orange or red.
+
+Copilot (loading supply-chain-risk-skill):
+
+  Authenticating with PSD API... OK
+  Authenticating with GTT... token cached, valid 12 more days
+  Pulling FAS Export Sales... OK
+
+  Scanning: soybeans, corn, wheat, coffee across 40+ countries...
+
+  SUPPLY CHAIN RISK DASHBOARD — Week of March 2, 2026
+
+  =============================================
+  RED ALERTS (0)
+  =============================================
+  None.
+
+  =============================================
+  ORANGE ALERTS (2)
+  =============================================
+
+  1. ARGENTINA — SOYBEAN MEAL EXPORTS
+     Risk level: ORANGE (elevated)
+
+     PSD signal: Argentina 2025/26 soybean production just cut 2 MMT to
+     50 MMT. Soybean crush projected at 37 MMT. Domestic soybean stocks
+     falling — ending stocks/use at 15.2%, approaching the 14% threshold
+     that historically triggers DEX tax increases.
+
+     GTT signal: Argentine soybean meal exports (HS 2304) in Nov-Jan
+     averaged 2.1 MMT/month — ABOVE last year's pace of 1.9 MMT/month.
+     Exporters appear to be front-running a potential tax hike.
+
+     DIVERGENCE: Stocks tightening + exports accelerating = classic
+     pre-restriction pattern. Argentina raised the soybean export tax
+     (DEX) from 31% to 33% in 2022 under similar conditions.
+
+     Watch for: Argentine government budget statements, central bank
+     reserve levels (low reserves = higher probability of tax increase
+     to generate USD revenue).
+
+  2. INDIA — WHEAT
+     Risk level: ORANGE (elevated)
+
+     PSD signal: India 2025/26 wheat ending stocks estimated at 7.8 MMT,
+     the lowest since 2017/18. Government procurement was below target
+     for the second consecutive year. S/U ratio at 7.1%.
+
+     GTT signal: India wheat exports (HS 1001) have been near zero since
+     the May 2022 ban, which remains in place. However, GTT shows India
+     IMPORTED 1.2 MMT of wheat in the last 6 months (from Russia and
+     Australia) — unusual for a country that is typically self-sufficient.
+
+     DIVERGENCE: India is quietly switching from net exporter to net
+     importer. The import volumes suggest domestic availability is tighter
+     than official PSD estimates reflect. If procurement fails again in
+     the April-May 2026 rabi harvest, India could become a structural
+     wheat importer for the first time in a decade.
+
+     Implication: Bullish for global wheat if India enters the import
+     market at scale (1.4 billion people, even small per-capita import
+     = large absolute volume).
+
+  =============================================
+  YELLOW ALERTS (3)
+  =============================================
+
+  3. RUSSIA — WHEAT EXPORT TAX
+     Status: YELLOW (watch)
+     The floating export tax mechanism automatically adjusts. Current tax
+     is $22/MT on wheat. If FOB Black Sea prices rise above $280/MT (now
+     at $265), tax increases to $28/MT. Not a ban risk, but a margin
+     squeeze for importers locked into forward purchases at current prices.
+
+  4. BRAZIL — CORN EXPORTS
+     Status: YELLOW (watch)
+     Safrinha corn (second crop) planting is 2 weeks behind average due
+     to late soybean harvest. If safrinha yields disappoint, Brazil's
+     corn S&D tightens and Jul-Oct corn exports could fall below GTT's
+     current pace projection. Not urgent yet — safrinha crop doesn't
+     ship until July.
+
+  5. US — SOYBEAN EXPORT SALES CONVERSION
+     Status: YELLOW (watch)
+     FAS Export Sales show 4.2 MMT of outstanding (unshipped) soybean
+     commitments to China. GTT actual shipments in Jan were 4.68 MMT.
+     The commitment-to-shipment conversion rate is 78%, below the 5-year
+     average of 85% for this point in the marketing year. Could indicate
+     some Chinese cancellations incoming, or just logistical delays.
+     Monitor next 2-3 weeks of inspection data.
+
+  =============================================
+  GREEN (all clear)
+  =============================================
+  Soybeans (Brazil, US, Paraguay): normal flows
+  Corn (US, Ukraine): normal flows
+  Wheat (Russia export volumes, Canada, Australia, EU): normal flows
+  Coffee (Brazil, Vietnam, Colombia): normal flows
+
+  PDF dashboard: reports/supply-chain-risk-2026-03-02.pdf
+  HTML interactive: reports/supply-chain-risk-2026-03-02.html
+
+  Next scan: March 9, 2026 (auto-scheduled).
+
+
+=============================================================
+COMPLETE TEAM SKILL LIBRARY — WITH PSD & GTT
+=============================================================
+
+Updated skill library after adding the data-platform skills:
+
+  SKILL                          CREATED BY            DATA SOURCES
+  ─────────────────────────────────────────────────────────────────
+  wasde-analyzer-skill           Senior grain analyst   USDA WASDE PDF, Bloomberg
+  crop-weather-weekly-skill      Weather/crop analyst   USDA NASS, NOAA, Drought Monitor
+  basis-export-tracker-skill     Logistics analyst      DTN bids, USDA FAS, barge freight
+  coffee-fundamental-skill       Softs analyst          CEPEA, ICE, CFTC COT, ECMWF
+  psd-balance-sheet-skill        Senior grain analyst   USDA PSD API (PSD_API_KEY)
+  trade-flow-intel-skill         Trade flow analyst     GTT REST API (GTT_USER_ID/PASSWORD)
+  supply-chain-risk-skill        Research director      PSD + GTT + FAS combined
+  seasonal-spread-skill          Quant analyst          CBOT historical, seasonal models
+  client-briefing-skill          Research director      Calls other skills internally
+
+  Environment variables required for new team members:
+
+    export PSD_API_KEY="your-usda-fas-api-key"
+    export GTT_USER_ID="your-gtt-username"
+    export GTT_PASSWORD="your-gtt-password"
+    export STRIPE_API_KEY="..."        # only for non-ag skills
+    export MIXPANEL_TOKEN="..."        # only for non-ag skills
+
+  The team lead adds these to the onboarding doc. Credentials are never
+  stored in skill code — they're always read from environment variables
+  at runtime. The security scanner catches any accidental hardcoding
+  before the skill is published.
+
+  New hire onboarding is now:
+
+    1. Get API credentials from team lead (PSD_API_KEY, GTT creds)
+    2. Add to ~/.zshrc or ~/.bashrc
+    3. Run the 7 install commands
+    4. Start using skills immediately
+
+  Total setup time: 15 minutes. Knowledge transfer time: zero.
+  Everything the team knows is in the skills.
