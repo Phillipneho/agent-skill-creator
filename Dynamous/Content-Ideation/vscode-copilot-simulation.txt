@@ -5771,3 +5771,703 @@ That's all agent-skill-creator ever needed to be. Not a developer
 tool. Not an AI platform. Not a framework.
 
 A door.
+
+
+#############################################################
+#############################################################
+##                                                         ##
+##  DESIGN PRINCIPLE:                                      ##
+##  "DON'T MAKE HUMANS BE CLEAR"                           ##
+##                                                         ##
+##  Real users don't write specifications. They dump files, ##
+##  paste URLs, forward emails, and say "make it work."    ##
+##  The agent must derive intent from messy context.        ##
+##                                                         ##
+#############################################################
+#############################################################
+
+THE PROBLEM WITH THE SIMULATIONS ABOVE:
+
+Every simulation so far has a user who writes something like:
+
+  "I need a skill that: (1) does X, (2) does Y, (3) handles Z,
+   with format A for input and format B for output. Here are my
+   requirements: [perfectly structured paragraph]."
+
+That's fiction. Real users — especially non-technical analysts in
+corporate environments — do NOT write clear specifications. They
+can't. Not because they're lazy or stupid, but because:
+
+  - They don't know what they don't know (they can't specify edge
+    cases they haven't thought about)
+  - They don't have the vocabulary (they say "the thing that shows
+    the numbers" not "the S&D balance sheet pivot table")
+  - They're busy (they have 10 minutes between meetings, not an hour
+    to write a requirements doc)
+  - The workflow lives in muscle memory (they can DO it, but they
+    can't DESCRIBE it — like explaining how to ride a bicycle)
+  - They communicate in artifacts, not words (they'll show you the
+    spreadsheet, not describe it)
+
+agent-skill-creator must be designed to work with MESSY, INCOMPLETE,
+INARTICULATE input. The agent's job is to derive intent from whatever
+the human dumps on it — files, URLs, screenshots, half-sentences,
+forwarded emails, "like this but different."
+
+Here's what REAL interactions look like:
+
+
+=============================================================
+REAL INTERACTION 1: The File Dump
+=============================================================
+
+What the analyst ACTUALLY types:
+
+Analyst: /agent-skill-creator here
+
+And then drags 5 files into the chat:
+  - weekly-process.xlsx
+  - last-weeks-output.pdf
+  - usda-website-screenshot.png
+  - email-from-boss.eml
+  - old-script-that-half-works.py
+
+That's it. No description. No requirements. Just "here."
+
+What agent-skill-creator does:
+
+Copilot (loading agent-skill-creator skill):
+
+  Let me understand what you need from these files...
+
+  Reading weekly-process.xlsx...
+  Reading last-weeks-output.pdf...
+  Viewing usda-website-screenshot.png...
+  Reading email-from-boss.eml...
+  Reading old-script-that-half-works.py...
+
+  OK, here's what I'm piecing together:
+
+  YOUR WORKFLOW (reconstructed from the files):
+
+  1. weekly-process.xlsx — This is your working spreadsheet. It has 6
+     tabs: "Raw Data", "Pivot", "YoY Comparison", "Pace Calculator",
+     "Charts", and "Summary". The "Raw Data" tab has USDA export
+     inspection data pasted in (columns match the USDA FAS CSV
+     format). The "Summary" tab is a formatted table that looks like
+     it gets copy-pasted into a report.
+
+  2. last-weeks-output.pdf — This is what the final product looks
+     like. It's a one-page PDF with the summary table from your
+     Excel, plus two charts (cumulative exports by destination, and
+     weekly pace vs. needed pace). Header says "Weekly Export
+     Inspections Summary — Week Ending Feb 20, 2026."
+
+  3. usda-website-screenshot.png — This is a screenshot of
+     apps.fas.usda.gov/export-sales/inspections.htm showing where
+     you download the CSV. You circled the "Current Marketing Year"
+     link in red.
+
+  4. email-from-boss.eml — From Henrik Johansson, Feb 24: "Can you
+     make the weekly export summary include soymeal and soyoil too?
+     And add a comparison to the 5-year average pace. Client asked
+     for it. Need it by next Monday."
+
+  5. old-script-that-half-works.py — A 47-line Python script that
+     downloads the USDA CSV and filters for soybeans. It has a
+     comment on line 12: "# TODO: this breaks when USDA changes
+     column names again" and another on line 38: "# Ana wrote this
+     part, not sure what it does". The script stops after filtering —
+     no pivot, no pace calculation, no output formatting.
+
+  MY UNDERSTANDING OF WHAT YOU NEED:
+
+  You manually produce a weekly export inspections report. The process
+  is: download CSV from USDA FAS → paste into Excel → filter → pivot
+  by destination → calculate YoY and pace → format summary → generate
+  charts → export to PDF. It takes some amount of time you'd rather
+  not spend.
+
+  Your boss just expanded the scope: add soymeal and soyoil, add
+  5-year average pace comparison. Deadline: next Monday.
+
+  Someone (you or Ana?) started writing a Python script to automate
+  the first part but it only does the CSV download and breaks
+  periodically.
+
+  IS THIS RIGHT? Before I build anything, let me confirm:
+
+  1. The output should look exactly like last-weeks-output.pdf but
+     with soymeal + soyoil added (separate tables? or combined?)
+  2. "5-year average pace" = for each week of the marketing year,
+     what was the average cumulative export percentage across the
+     last 5 marketing years?
+  3. The marketing year for soybeans is Sep 1 – Aug 31. Is it the
+     same for soymeal and soyoil?
+  4. The PDF goes to Henrik (your boss) — does it also go to clients
+     directly, or does Henrik paste it into a larger report?
+
+  I only need quick answers — one word each is fine. I'll figure out
+  the rest from the files.
+
+Analyst: combined table, yes, yes same, henrik pastes it into bigger report
+
+Copilot:
+
+  Got it. Building...
+
+  [builds the skill — same quality as before, but derived entirely
+   from the 5 files, not from a written specification]
+
+
+=============================================================
+REAL INTERACTION 2: The URL Dump + Half-Sentence
+=============================================================
+
+What the analyst ACTUALLY types:
+
+Analyst: /agent-skill-creator i need something for this
+https://apps.fas.usda.gov/psdonline/app/index.html#/app/advQuery
+and also this
+https://quickstats.nass.usda.gov/
+same thing as what we do in the wasde extractor but for these two
+maybe look at references/psd-api-docs.html too
+
+What agent-skill-creator does:
+
+Copilot (loading agent-skill-creator skill):
+
+  Let me look at what you shared...
+
+  Fetching https://apps.fas.usda.gov/psdonline/app/index.html...
+  → This is the USDA PSD (Production, Supply & Distribution) online
+    query tool. It has a web-based advanced query builder for global
+    commodity S&D data.
+
+  Fetching https://quickstats.nass.usda.gov/...
+  → This is USDA NASS Quick Stats — the statistical query tool for
+    domestic agricultural data (acreage, yield, production, prices,
+    by state/county/crop reporting district).
+
+  Reading references/psd-api-docs.html...
+  → This is the FAS Open Data Web API documentation. There's a REST
+    API at apps.fas.usda.gov/opendataweb/api/ that returns PSD data
+    as JSON. Endpoints: commodities, countries, unitsOfMeasure,
+    and the main query endpoint with commodity_code, country_code,
+    market_year filters.
+
+  Looking at your existing wasde-extractor-skill for the pattern...
+  → That skill: downloads USDA data → parses structured tables →
+    compares to previous period → produces a change summary →
+    exports to Excel/markdown.
+
+  HERE'S WHAT I THINK YOU WANT:
+
+  Two data sources (PSD and NASS Quick Stats) that you currently
+  query manually through web interfaces, turned into skills that
+  follow the same pattern as your WASDE extractor — download, parse,
+  compare, summarize.
+
+  SKILL A — PSD Balance Sheet Puller:
+  Instead of clicking through the PSD web query tool (selecting
+  commodity, country, market year, clicking "Get Data", exporting
+  CSV, then reformatting in Excel), you'd say:
+    /psd-query-skill US soybeans 2025/26 balance sheet
+  And get a formatted S&D table with month-over-month revisions.
+
+  SKILL B — NASS Quick Stats Puller:
+  Instead of clicking through Quick Stats (selecting Program,
+  Sector, Group, Commodity, Category, Domain, Geographic Level...
+  it's 8 dropdown menus), you'd say:
+    /nass-query-skill Iowa corn yield by county 2020-2025
+  And get a clean table.
+
+  Both would use APIs (PSD has the REST API you shared, NASS has a
+  public API at quickstats.nass.usda.gov/api) instead of scraping
+  web pages. More reliable, faster, and won't break when USDA
+  redesigns the website.
+
+  Is this the right direction? Or did you mean something different
+  by "same thing as the wasde extractor"?
+
+Analyst: yes that plus can the psd one compare our internal balance to usda
+
+Copilot:
+
+  Smart — so the PSD skill doesn't just pull USDA data, it also reads
+  your team's internal balance (from research.sd_balances on
+  Databricks, same as what the agdb-query-assistant uses) and shows
+  a side-by-side comparison: "Our estimate vs USDA" with the
+  differences highlighted.
+
+  That's actually three things in one:
+  1. Pull USDA PSD data via API
+  2. Pull internal estimate from Databricks
+  3. Show the gap and flag where you differ by more than X%
+
+  Building both skills...
+
+
+=============================================================
+REAL INTERACTION 3: The Screenshot and a Complaint
+=============================================================
+
+What the analyst ACTUALLY types:
+
+Analyst: /agent-skill-creator this is ridiculous
+
+[drags in a screenshot of a Bloomberg terminal showing a cluttered
+Excel spreadsheet open next to it, with red circles and arrows drawn
+on it in MS Paint]
+
+look at this mess. every day i manually type these bloomberg numbers
+into this spreadsheet. there has to be a better way
+
+What agent-skill-creator does:
+
+Copilot (loading agent-skill-creator skill):
+
+  Viewing your screenshot...
+
+  I can see:
+  - LEFT SIDE: Bloomberg Terminal showing settlement prices for what
+    looks like CBOT grain futures (corn, wheat, soybeans — I can read
+    the tickers: C 1, W 1, S 1, SM 1, BO 1, plus some ICE contracts)
+  - RIGHT SIDE: An Excel spreadsheet with columns: Date, Contract,
+    Settlement, Change, Volume, Open Interest. The data matches what's
+    on the Bloomberg screen. Your red circles highlight the cells
+    where you're typing today's numbers.
+  - The arrow goes from the Bloomberg price to the corresponding
+    Excel cell.
+
+  You're manually transcribing settlement prices from Bloomberg into
+  Excel every day. I can see about 15 contracts in the spreadsheet
+  and 12 visible on the Bloomberg screen.
+
+  QUESTIONS (so I build the right thing):
+
+  1. How many contracts total do you track? (I can see ~15 in the
+     spreadsheet, but there might be more below the visible area)
+  2. Is this ONLY settlement prices, or do you also record volume,
+     open interest, and daily change?
+  3. Do you have Bloomberg API access (B-PIPE, SAPI, or DAPI), or
+     are you limited to the Terminal screen?
+  4. Does your firm have a data feed that already captures these
+     settlements? (Many firms store Bloomberg data in a database —
+     you might not need to pull from Bloomberg at all if it's already
+     in agri_lake on Databricks)
+
+  The answer to #4 could save us a LOT of complexity. If Rajesh's
+  data team already loads daily settlements into Databricks, the
+  skill just needs to query Databricks and format the spreadsheet.
+  No Bloomberg API needed.
+
+Analyst: oh i didnt know databricks might have it. how do i check
+
+Copilot:
+
+  Let me check for you right now.
+
+  /agdb-query-assistant-skill Are there daily settlement prices in
+  Databricks? Look for tables with settlement, price, or daily in
+  the name.
+
+  [querying Databricks catalog]
+
+  YES. Found it:
+
+  agri_lake.market.daily_settlements
+  - 2.4 million rows (goes back to 2018)
+  - Columns: price_date, instrument_code, settlement_price,
+    daily_change, volume, open_interest, exchange
+  - Updated daily at 6:30pm CT (after CBOT close)
+  - Includes: CBOT (corn, wheat, soybeans, meal, oil), ICE (coffee,
+    sugar, cotton, cocoa), MATIF (milling wheat, rapeseed)
+  - 48 contracts currently active
+
+  YOU ALREADY HAVE THIS DATA IN DATABRICKS. You don't need to type
+  it from Bloomberg at all. The data team loads it automatically
+  every evening.
+
+  So instead of a Bloomberg-scraping skill, what you need is:
+  1. A skill that queries agri_lake.market.daily_settlements
+  2. Formats the results to match your Excel layout
+  3. Writes to your spreadsheet (or replaces it entirely)
+
+  This is a 10-minute build, not a Bloomberg API project.
+
+  Want me to build it?
+
+Analyst: omfg yes
+
+Copilot (loading agent-skill-creator skill):
+
+  Building...
+
+  daily-settlements-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── settlement_puller.py      # Query Databricks for latest
+  │   │                             #   settlements by contract list
+  │   ├── excel_formatter.py        # Match the analyst's existing
+  │   │                             #   spreadsheet layout exactly
+  │   └── change_highlighter.py     # Color-code moves > 2% (red/green)
+  ├── references/
+  │   ├── contract-list.md          # The 15 contracts to track
+  │   └── methodology.md
+  ├── assets/
+  │   └── contract_list.json        # Configurable contract list
+  ├── install.sh
+  └── README.md
+
+  Installed at: ~/.agents/skills/daily-settlements-skill
+
+  This replaces 15 minutes of daily Bloomberg-to-Excel transcription
+  with a 5-second query. And you'll never have a typo again.
+
+  But the bigger insight: you didn't know the data was already in
+  Databricks. The skill didn't just automate your workflow — it
+  revealed that your workflow was UNNECESSARY. The daily manual
+  transcription was solving a problem that was already solved by
+  infrastructure you didn't know existed.
+
+  This happens more than you'd think.
+
+
+=============================================================
+REAL INTERACTION 4: The Forwarded Email + "Can We Do This?"
+=============================================================
+
+What the analyst ACTUALLY types:
+
+Analyst: /agent-skill-creator my colleague from London sent me this. is this something we could build?
+
+[pastes the full body of a forwarded email, including the original
+headers, signatures, legal disclaimers, and a 6-message reply chain]
+
+---------- Forwarded message ----------
+From: James Whitfield <j.whitfield@globalagri.com>
+To: Maria Santos <m.santos@globalagri.com>
+Subject: FW: RE: RE: CONAB data automation
+
+Maria,
+
+See below — the London grains desk built something that pulls CONAB
+crop estimates automatically when they're released. Apparently it
+runs every time CONAB publishes (they don't have a fixed schedule,
+it's usually 2nd or 3rd week of the month). The London team says
+it's saved them hours. Think we could do something similar for our
+Brazil soy coverage?
+
+- James
+
+---------- Original message ----------
+From: Oliver Chang <o.chang@globalagri-london.com>
+To: James Whitfield <j.whitfield@globalagri.com>
+Subject: RE: CONAB data automation
+
+James,
+
+Yeah we've been running it since November. It monitors the CONAB
+website (conab.gov.br/info-agro/safras/graos), detects when a new
+Boletim de Safra PDF is posted, downloads it, extracts the Brazil
+soy/corn/cotton production and area tables, converts from Portuguese,
+compares to the previous month's boletim, and flags any revision
+larger than 1 MMT. Output goes to our Bloomberg chat and a shared
+drive.
+
+We built it in Python — about 400 lines. The tricky part was parsing
+the CONAB PDF because they change the table layout slightly every
+few months and the tables have merged cells. We ended up using
+Camelot for the table extraction. It breaks maybe once or twice a
+year when CONAB does a major format change.
+
+Happy to share the code but it's a bit messy and has our London
+paths hardcoded everywhere.
+
+- Oliver
+
+---------- Earlier ----------
+[3 more messages of scheduling back-and-forth, irrelevant to the
+technical content]
+
+DISCLAIMER: This email is confidential and intended solely for...
+[200 words of legal boilerplate]
+
+What agent-skill-creator does:
+
+Copilot (loading agent-skill-creator skill):
+
+  Let me extract the useful information from this email chain...
+
+  IGNORING: scheduling messages (3), legal disclaimer, email headers,
+  signatures.
+
+  RELEVANT CONTENT (from Oliver Chang's email):
+
+  The London grains desk has a working Python script (~400 lines) that:
+  1. Monitors conab.gov.br for new Boletim de Safra PDFs
+  2. Downloads the PDF when detected
+  3. Extracts Brazil soy/corn/cotton production + area tables
+  4. Translates from Portuguese
+  5. Compares to previous month, flags revisions > 1 MMT
+  6. Outputs to Bloomberg chat + shared drive
+
+  Known issues:
+  - CONAB changes table layout periodically → breaks the PDF parser
+  - Code has London-specific hardcoded paths
+  - Built with Camelot (Python PDF table extraction library)
+  - Breaks ~1-2x/year on major format changes
+
+  WHAT YOU COULD DO:
+
+  Option A — Get Oliver's code, clean it up, wrap it as a skill
+  (faster if the code is solid, but "a bit messy" suggests fragile)
+
+  Option B — Build a new skill from scratch using the same approach
+  but with better PDF parsing resilience and your team's output
+  format (your format differs from London's — they post to Bloomberg
+  chat, you'd want it in your existing report pipeline)
+
+  Option C — Build a hybrid: use Oliver's proven CONAB monitoring
+  logic (website polling, URL pattern detection) but rebuild the
+  PDF extraction with a more resilient approach than Camelot
+  (possibly using LLM-based table extraction, which handles layout
+  changes much better than rule-based parsers)
+
+  My recommendation: Option C. The monitoring logic is
+  straightforward and Oliver has it working. The PDF parsing is the
+  fragile part — and that's where modern LLM-based extraction
+  (feeding the PDF page image to an LLM and asking it to extract
+  the table) would be much more resilient than Camelot's rule-based
+  approach.
+
+  Want me to build this? I can also reach out to Oliver's code via
+  your GitLab if it's there — or you can ask him to share it and
+  drop it in references/.
+
+Analyst: dont have his code yet. just build it from what you know about conab. i can always refine later
+
+Copilot:
+
+  Building from public knowledge of CONAB's publication patterns...
+
+  [builds conab-monitor-skill — with website poller, PDF download,
+   LLM-assisted table extraction, Portuguese→English translation,
+   revision tracking, and output to the team's existing pipeline]
+
+  The key design decision: instead of rigid Camelot table extraction
+  (which breaks on layout changes), the skill sends each PDF page to
+  the LLM with the prompt: "Extract the soybean production table
+  from this CONAB Boletim de Safra page. Return: state, area_ha,
+  yield_kg_ha, production_mt." This approach handles layout changes
+  gracefully because the LLM reads the page visually, not by pixel
+  coordinates.
+
+  When Oliver shares his code, we can cherry-pick his monitoring
+  logic (CONAB URL patterns, publication detection) and plug it in.
+  The skill is designed to accept improvements incrementally.
+
+
+=============================================================
+REAL INTERACTION 5: The Absolute Minimum Viable Input
+=============================================================
+
+This is the most extreme case — and the most realistic. The analyst
+provides almost nothing. The agent must work with what it has.
+
+What the analyst ACTUALLY types:
+
+Analyst: /agent-skill-creator freight
+
+That's it. One word.
+
+What agent-skill-creator does:
+
+Copilot (loading agent-skill-creator skill):
+
+  "Freight" is broad. Let me figure out what you need based on your
+  context.
+
+  You're on the S&D desk at GlobalAgri Capital. In the context of
+  ag commodity research, "freight" likely means one of:
+
+  A. OCEAN FREIGHT RATES — tracking Panamax/Supramax bulk carrier
+     rates on key grain routes (US Gulf to China, Santos to China,
+     Black Sea to Egypt). You need this for: CIF price calculations,
+     export competitiveness analysis, and logistics cost monitoring.
+
+  B. BARGE FREIGHT — US inland barge rates on the Mississippi/
+     Illinois/Ohio rivers. You need this for: basis analysis (barge
+     freight affects the spread between CBOT and Gulf FOB prices).
+
+  C. FREIGHT FUTURES — FFA (Forward Freight Agreement) curves and
+     derivatives. You need this for: hedging logistics risk and
+     forward pricing.
+
+  D. CONTAINER FREIGHT — rates for containerized ag products (dairy,
+     meat, specialty crops). Less likely for your desk.
+
+  Which one? Or multiple?
+
+Analyst: A. but i dont know where the data comes from. tomoko does this somehow
+
+Copilot:
+
+  Let me check what Tomoko uses...
+
+  Looking at the daily-assessment-skill (Tomoko's)...
+  Found: in her normalization step, she uses a FOB-CIF differential
+  of $28.50/MT for the Santos→China route, sourced from "Baltic
+  Exchange via Refinitiv."
+
+  Looking at Databricks...
+  Found: agri_lake.shipping.freight_rates — daily ocean freight rates
+  by route, going back to 2019. Sources include Baltic Exchange
+  (Panamax, Supramax indices) and broker indications.
+
+  Columns: rate_date, route_code, vessel_class, rate_usd_mt,
+  rate_worldscale, index_value, source.
+
+  Routes available:
+  - USG_CN (US Gulf → China): Panamax
+  - SANTOS_CN (Santos → China): Panamax
+  - SANTOS_EU (Santos → EU): Supramax
+  - BSEA_EGY (Black Sea → Egypt): Handysize
+  - BSEA_CN (Black Sea → China): Panamax
+  - PNW_CN (Pacific NW → China): Panamax
+  - ARG_CN (Up River → China): Panamax
+  - 12 more routes...
+
+  So the data already exists. You need a skill that:
+  1. Pulls freight rates from Databricks
+  2. Shows you the current rate by route
+  3. Tracks trends (is freight rising or falling?)
+  4. Calculates what the freight cost means for export competitiveness
+     (e.g., "at current freight, US Gulf soybeans to China cost $X/MT
+     delivered vs Santos soybeans at $Y/MT — Brazil has a $Z/MT
+     logistics advantage")
+
+  That's a freight competitiveness tool, not just a freight tracker.
+  It tells the S&D team which origin is cheapest to ship from on any
+  given day — which directly affects trade flow forecasts.
+
+  Want me to build this?
+
+Analyst: ya
+
+Copilot:
+
+  Building...
+
+  [builds freight-competitiveness-skill from one word of input + the
+   analyst's desk context + Databricks schema discovery + Tomoko's
+   existing skill as a reference point]
+
+
+=============================================================
+DESIGN IMPLICATIONS FOR AGENT-SKILL-CREATOR
+=============================================================
+
+These interactions reveal what agent-skill-creator must actually
+be good at:
+
+1. FILE INTERPRETATION, NOT REQUIREMENTS GATHERING
+
+  The primary input is ARTIFACTS, not words:
+  - Excel files (reverse-engineer the workflow from the sheet structure)
+  - PDFs (understand what the output should look like)
+  - Screenshots (read what's on the screen, including Bloomberg)
+  - Code files (understand what already exists, what's broken)
+  - Emails (extract the actual request from the noise)
+  - URLs (fetch and understand the data source)
+
+  The agent must be able to look at an Excel workbook with 6 tabs
+  and reconstruct the entire workflow: "Tab 1 is raw input, Tab 2 is
+  a pivot of Tab 1 filtered by X, Tab 3 compares Tab 2 to a baseline
+  in Tab 4, Tab 5 generates charts from Tab 3, Tab 6 is the formatted
+  output." The human will never describe this. The spreadsheet IS the
+  specification.
+
+2. CONTEXT INFERENCE, NOT EXPLICIT REQUIREMENTS
+
+  When someone types "freight" the agent should already know:
+  - What desk they're on (S&D, modelling, price assessment)
+  - What commodities they cover (grains, oilseeds, softs)
+  - What data sources are already available (Databricks, Bloomberg,
+    colleagues' existing skills)
+  - What output format their team uses (Excel, PDF, markdown)
+
+  The agent doesn't ask "what do you mean by freight?" — it presents
+  the most likely interpretation given the context and confirms.
+
+3. PROGRESSIVE REFINEMENT, NOT UPFRONT SPECIFICATION
+
+  The interaction pattern should be:
+  - Human dumps messy input (files, URLs, one word, screenshot)
+  - Agent reconstructs intent and presents its understanding
+  - Human corrects with minimal effort ("yes", "no the other one",
+    "also add X")
+  - Agent builds a first version
+  - Human uses it, finds gaps, says "also do Y"
+  - Agent refines
+
+  This is how humans naturally communicate. They don't write specs.
+  They iterate. The agent must be comfortable building from 60%
+  understanding and refining, rather than demanding 100%
+  understanding before starting.
+
+4. DISCOVERY OVER ASSUMPTION
+
+  The analyst manually typing Bloomberg prices into Excel didn't know
+  the data was already in Databricks. The analyst who said "freight"
+  didn't know Tomoko's skill already had freight data. The agent's
+  job is not just to build what was asked, but to DISCOVER what
+  already exists and connect the dots.
+
+  Before building, always check:
+  - Is this data already in Databricks? (query the catalog)
+  - Has a colleague already built a skill for this? (check the
+    team's GitLab skill library)
+  - Is there an API for this data source? (check before scraping)
+  - Does the existing workflow have a simpler solution? (maybe the
+    entire workflow is unnecessary)
+
+5. CONFIRM, DON'T INTERROGATE
+
+  BAD: "Please provide: (1) the data source URL, (2) the update
+  frequency, (3) the output format, (4) the distribution list..."
+  (This is a requirements form. Nobody fills these out.)
+
+  GOOD: "From your files, it looks like you download data from USDA
+  every Monday, pivot it by destination, and send Henrik a PDF.
+  Right?"
+  (This is a confirmation. One word to accept.)
+
+  The agent should do the work of understanding and present a
+  hypothesis. The human's job is to confirm or correct — not to
+  specify from scratch.
+
+6. FAIL FORWARD, NOT FAIL SAFE
+
+  When the agent has 60% understanding, it should build the 60% skill
+  and let the human see the output. The human will immediately say
+  "this is wrong, it should be X" — which is MUCH easier than asking
+  the human to specify X from nothing. Seeing a wrong output is the
+  fastest way for a non-technical person to articulate what they
+  actually want.
+
+  The worst thing the agent can do is ask 15 clarifying questions
+  before building anything. By question 5, the human has given up
+  and gone back to their spreadsheet.
+
+SUMMARY:
+
+agent-skill-creator should treat human input as EVIDENCE, not
+INSTRUCTIONS. The files, URLs, screenshots, half-sentences, and
+single words are all evidence of what the human needs. The agent's
+job is forensic — reconstruct the intent from the evidence, present
+a hypothesis, confirm, build, and refine.
+
+The human is never the bottleneck. The agent is always the one doing
+the work of understanding.
