@@ -2021,3 +2021,771 @@ Updated library with the weather-powered skills:
   into crop yield estimates, river level predictions, and global anomaly
   scores in real-time. The data is public (Open-Meteo). The edge isn't
   the data — it's the skill that knows what to do with it.
+
+
+=============================================================
+EXPANDED: DATA INGESTION PIPELINE SKILLS
+=============================================================
+
+Beyond API wrappers, the team now builds skills that create automated
+data ingestion pipelines — pulling, parsing, normalizing, and storing
+data from sources that don't have clean APIs. Raw satellite rasters,
+government FTP dumps, vessel tracking feeds, and fire detection data.
+These are the plumbing skills that feed the analytical skills above.
+
+
+=============================================================
+SKILL 12: NOAA Satellite Crop Monitor (NDVI / VHI Pipeline)
+=============================================================
+
+The remote sensing analyst on the team:
+
+User: /agent-skill-creator I need to build a data pipeline that ingests NOAA STAR's weekly Vegetation Health Products — specifically the Smoothed NDVI (SMN), Vegetation Condition Index (VCI), Temperature Condition Index (TCI), and Vegetation Health Index (VHI). These are satellite-derived datasets at 4km resolution covering the entire globe, updated weekly. The data lives at star.nesdis.noaa.gov/data/pub0018/VHPdata4users/data/Blended_VH_4km/ — GeoTIFF files organized by year and week number. There's no API — you have to wget the files, parse the GeoTIFF rasters, and extract values for the regions you care about. I want the skill to: (1) automatically download the latest weekly GeoTIFF files for VHI, VCI, SMN, and TCI, (2) clip the rasters to our 32 crop regions (same regions as the anomaly scanner), (3) compute area-weighted average VHI/VCI/NDVI for each region, (4) compare to the same-week historical average (NOAA has data from 1981), (5) flag any region where VHI drops below 40 (drought stress) or VCI drops below 35 (vegetation deterioration), and (6) produce a weekly "Satellite Crop Monitor" report. This is the same data that USDA FAS uses in their Crop Explorer tool, but we'd have it parsed and actionable in our own pipeline instead of waiting for their interpretation. I have no special credentials — this data is public. Here's the NOAA documentation I saved: references/noaa-vh-products-guide.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/noaa-vh-products-guide.pdf...
+
+  This is a GeoTIFF raster ingestion problem. NOAA publishes global 4km
+  vegetation health products weekly as individual .tif files. The skill
+  needs to handle: file discovery (new files appear weekly by week number),
+  HTTP download (wget-style, no authentication), raster parsing (GeoTIFF
+  → numpy arrays), spatial clipping (global raster → regional means),
+  and time-series comparison (current week vs 40+ year baseline). Let me
+  build this.
+
+  Implicit requirements:
+  - Data URL pattern:
+    https://www.star.nesdis.noaa.gov/data/pub0018/VHPdata4users/
+    data/Blended_VH_4km/geo_TIFF/VHI/VHI_YYYY_WW.tif
+    (similarly for VCI, SMN, TCI — separate directories)
+  - Files are global 4km GeoTIFF rasters: 10000 × 3616 pixels, WGS84
+  - Week numbering follows NOAA convention (ISO week), published with
+    ~5-7 day lag
+  - Need rasterio or GDAL to parse GeoTIFF (standard geospatial Python)
+  - Region clipping: define bounding boxes or polygon masks for each of
+    the 32 crop regions, extract pixel values within each polygon
+  - Area weighting: pixels at different latitudes cover different areas
+    (cos(lat) correction)
+  - VHI interpretation thresholds from NOAA:
+    <10 = extreme drought, 10-20 = severe drought, 20-30 = moderate
+    drought, 30-40 = mild drought, 40-60 = normal, >60 = favorable
+  - Historical baseline: download archived annual .gz files from 1981-2023
+    for same-week comparison (one-time setup, then incremental weekly)
+  - Storage: cache downloaded GeoTIFFs locally in data/noaa-vh/ to avoid
+    re-downloading. Only fetch the latest week's files each run.
+  - NDVI (SMN) absolute values matter for crop identification; VHI and
+    VCI are relative indices that already account for the local baseline
+  - Dependencies: rasterio, numpy, shapely (for polygon clipping).
+    These are common geospatial packages — not exotic
+
+  Building...
+
+  noaa-crop-monitor-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── noaa_downloader.py        # wget-style fetcher for weekly GeoTIFFs
+  │   │                             #   (VHI, VCI, SMN, TCI directories)
+  │   │                             #   handles retries, caching, new file detection
+  │   ├── raster_parser.py          # GeoTIFF → numpy array using rasterio
+  │   │                             #   handles projection, nodata values, masking
+  │   ├── region_clipper.py         # Clip global raster to 32 crop regions
+  │   │                             #   using polygon masks, area-weighted mean
+  │   ├── baseline_builder.py       # One-time: download 1981-2023 archives,
+  │   │                             #   compute per-week per-region mean and stddev
+  │   │                             #   for VHI, VCI, SMN, TCI (cached to assets/)
+  │   ├── anomaly_detector.py       # Current week vs baseline: z-scores and
+  │   │                             #   threshold alerts (VHI<40, VCI<35)
+  │   ├── trend_tracker.py          # Rolling 4-week, 8-week, 12-week VHI trends
+  │   │                             #   (is stress building or recovering?)
+  │   ├── ndvi_crop_stage.py        # NDVI curve analysis: is greenup on time?
+  │   │                             #   early/late planting detection from SMN
+  │   └── report_builder.py         # Weekly Satellite Crop Monitor (PDF + maps)
+  ├── references/
+  │   ├── noaa-vh-products.md       # Product definitions, thresholds, caveats
+  │   ├── geotiff-format.md         # Raster specs, projection, resolution
+  │   ├── region-polygons.md        # 32 region definitions (bounding boxes)
+  │   ├── vhi-interpretation.md     # What VHI values mean for crop yields
+  │   └── methodology.md
+  ├── assets/
+  │   ├── region_polygons.geojson   # 32 crop region masks
+  │   ├── baselines/                # Pre-computed weekly baselines (1981-2023)
+  │   │   ├── us-corn-belt.json     #   mean + stddev by week for VHI/VCI/SMN
+  │   │   ├── brazil-center-west.json
+  │   │   └── ... (30 more)
+  │   └── noaa_week_calendar.json   # ISO week → date mapping
+  ├── data/                         # Local cache for downloaded GeoTIFFs
+  │   └── noaa-vh/                  #   (gitignored, created on first run)
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (no credentials needed — public data)
+  Installed at: ~/.claude/skills/noaa-crop-monitor-skill
+
+  Shared to: github.com/acme-trading/noaa-crop-monitor-skill
+
+
+--- First run: building the historical baseline ---
+
+Analyst: /noaa-crop-monitor-skill Initialize the pipeline. Download the historical baseline and run the first weekly scan.
+
+Copilot (loading noaa-crop-monitor-skill):
+
+  STEP 1: Building historical baseline (one-time setup)
+
+  Downloading NOAA VH archives for 1981-2023...
+  This will take 15-20 minutes (downloading 43 annual .gz archives).
+
+  Downloading: VHI_1981.gz... done (34 MB)
+  Downloading: VHI_1982.gz... done (34 MB)
+  ...
+  Downloading: VHI_2023.gz... done (42 MB)
+
+  Extracting and computing per-week per-region baselines...
+  Processing 2,236 weekly rasters × 32 regions = 71,552 data points...
+
+  Baseline computed and cached to assets/baselines/
+  Each region now has a 42-year mean and standard deviation for every
+  week of the year, for each of VHI, VCI, SMN, and TCI.
+
+  STEP 2: Downloading current week's data
+
+  Fetching Week 09 (Feb 24 - Mar 2, 2026):
+  - VHI_2026_09.tif... done (18 MB)
+  - VCI_2026_09.tif... done (18 MB)
+  - SMN_2026_09.tif... done (18 MB)
+  - TCI_2026_09.tif... done (18 MB)
+
+  STEP 3: Clipping to 32 crop regions and computing anomalies...
+
+  SATELLITE CROP MONITOR — Week 09 (Feb 24 - Mar 2, 2026)
+
+  ALERTS (VHI < 40 or VCI < 35):
+
+  | Region                | VHI  | VCI  | TCI  | NDVI  | Status          |
+  |-----------------------|------|------|------|-------|-----------------|
+  | Argentina Pampas      | 28   | 24   | 32   | 0.41  | SEVERE STRESS   |
+  | Argentina Chaco       | 34   | 30   | 38   | 0.38  | MODERATE STRESS |
+  | US Southern Plains    | 36   | 31   | 41   | 0.29  | MODERATE STRESS |
+  | India Central (MP)    | 38   | 36   | 40   | 0.34  | MILD STRESS     |
+  | Vietnam Highlands     | 39   | 37   | 42   | 0.52  | MILD STRESS     |
+
+  CROSS-VALIDATION WITH ANOMALY SCANNER:
+  All 5 satellite stress regions match the top 5 weather anomalies
+  from the crop-anomaly-scanner-skill. The satellite data CONFIRMS the
+  weather-based signals — this isn't a false alarm from one data source.
+
+  REGIONAL DETAIL — ARGENTINA PAMPAS:
+
+  VHI at 28 is the lowest for Week 9 since 2023 (when VHI hit 18 during
+  the historic drought) and well below the 42-year average of 55 for this
+  week. The VHI has been declining for 6 consecutive weeks:
+
+  | Week | VHI  | Trend    |
+  |------|------|----------|
+  | W03  | 52   | Normal   |
+  | W04  | 48   | Slipping |
+  | W05  | 44   | Slipping |
+  | W06  | 40   | Threshold|
+  | W07  | 35   | Stress   |
+  | W08  | 31   | Stress   |
+  | W09  | 28   | Severe   |
+
+  The trajectory is accelerating downward. In the 2018 drought analogue,
+  VHI bottomed at 22 in Week 11 before rain brought partial recovery.
+  If the current trajectory holds, we could see VHI in the low 20s by
+  mid-March — which historically correlates with 15-25% soybean yield
+  reduction in the affected area.
+
+  NDVI CROP STAGE ANALYSIS:
+  The SMN (smoothed NDVI) at 0.41 for Argentina Pampas is concerning
+  because soybeans at pod-fill stage should have peak NDVI of 0.65-0.75.
+  An NDVI of 0.41 during reproductive stage means canopy is already
+  deteriorating — leaves are senescing prematurely due to drought stress.
+  This damage is irreversible even if rain arrives now.
+
+  REGIONS ALL FAVORABLE (VHI > 55):
+
+  | Region                | VHI  | Status     | Notes                    |
+  |-----------------------|------|------------|--------------------------|
+  | Brazil Center-West    | 62   | Favorable  | Soy harvest underway     |
+  | Brazil South          | 58   | Normal     | Soy harvest 60% complete |
+  | US Corn Belt          | N/A  | Dormant    | Pre-season, snow cover   |
+  | EU France             | 64   | Favorable  | Winter wheat looks good  |
+  | EU Germany            | 61   | Favorable  | Rapeseed on track        |
+  | Black Sea Ukraine     | 56   | Normal     | Winter wheat emerging    |
+  | Black Sea Russia      | 59   | Normal     | Winter wheat dormant     |
+  | Australia East        | 68   | Favorable  | Canola finished harvest  |
+  | China NE              | N/A  | Dormant    | Winter, snow cover       |
+
+  PDF report: reports/satellite-crop-monitor-wk09-2026.pdf
+  Maps: reports/vhi-global-map-wk09-2026.png
+
+  Pipeline is now configured. It will check for new NOAA data every
+  Monday and generate the weekly report automatically.
+
+
+--- A few weeks later, the analyst cross-references ---
+
+Analyst: /noaa-crop-monitor-skill Overlay the Argentina VHI trend against the 2018 and 2023 drought tracks. How close are we to those events?
+
+Copilot:
+
+  Pulling VHI time series for Argentina Pampas: 2018, 2023, and 2026...
+
+  ARGENTINA PAMPAS — VHI TRAJECTORY COMPARISON
+
+  Week    2018 (severe)    2023 (historic)    2026 (current)
+  ────────────────────────────────────────────────────────────
+  W01     58               52                 60
+  W02     56               48                 58
+  W03     54               42                 52
+  W04     50               36                 48
+  W05     46               30                 44
+  W06     41               24                 40
+  W07     36               20                 35
+  W08     30               18                 31
+  W09     26               16                 28  ← current
+  W10     23               15                 ?
+  W11     22 (bottom)      14 (bottom)        ?
+  W12     25               15                 ?
+  W13     32               20                 ?
+  W14     40               28                 ?
+
+  ASSESSMENT:
+  The 2026 track is running almost exactly on the 2018 path — 1-2 VHI
+  points higher at each week. The 2023 event was significantly worse
+  (VHI bottomed at 14 vs 2018's 22).
+
+  If 2026 follows the 2018 pattern:
+  - VHI bottoms around 22-24 in weeks 10-11 (mid-March)
+  - Recovery begins week 12 if autumn rains arrive
+  - Total soybean production loss: 15-20 MMT (2018 outcome)
+
+  If 2026 follows the 2023 pattern (worse case):
+  - VHI drops to 14-16, no recovery until week 14
+  - Total soybean production loss: 22-28 MMT (2023 outcome)
+
+  Current trajectory: closer to 2018 than 2023. The 2023 event had
+  exceptional heat on top of drought (TCI at 12), while 2026's TCI
+  is at 32 — hot but not extreme.
+
+  The satellite data and the weather data are telling the same story:
+  this is a significant but not historic event. USDA is probably 5-8 MMT
+  behind reality right now (their March estimate was 50 MMT; satellite
+  data suggests 42-45 MMT is more likely).
+
+
+=============================================================
+SKILL 13: NASA FIRMS Fire Monitor — Crop Residue & Deforestation
+=============================================================
+
+A creative use of fire data for commodity research:
+
+User: /agent-skill-creator NASA FIRMS provides near-real-time satellite fire detection globally — every thermal anomaly picked up by MODIS and VIIRS satellites, available within 3 hours via REST API at firms.modaps.eosdis.nasa.gov. Most people use this for wildfire tracking, but I've realized it has two powerful applications for commodity research: (1) Crop residue burning in Brazil's Cerrado signals land clearing for new soybean planting — if I see a spike in fire detections in Mato Grosso in August-September, it means farmers are clearing more land for the next season, which predicts INCREASED soybean acreage. (2) In India and Southeast Asia, post-harvest rice straw burning (October-November) intensity correlates with the size of the kharif rice harvest — more burning = bigger harvest, which is bearish for rice prices. I want a skill that ingests FIRMS data via their API (free, need a MAP_KEY from earthdata.nasa.gov), clips fire detections to our crop regions, counts fire pixels by week, compares to historical patterns, and generates alerts when fire activity deviates significantly. My MAP_KEY is in env as NASA_FIRMS_KEY. Here's my analysis showing the fire-acreage correlation in Brazil: references/firms-acreage-correlation.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/firms-acreage-correlation.pdf...
+
+  Fascinating — your analysis shows a 0.82 R² between Aug-Sep FIRMS fire
+  counts in Mato Grosso and the following season's soybean planted area
+  (CONAB data). That's a strong signal hidden in plain sight. And the India
+  rice burning correlation is 0.74 R² — not as clean but still tradeable.
+  Let me build this.
+
+  Implicit requirements:
+  - NASA FIRMS REST API: https://firms.modaps.eosdis.nasa.gov/api/area/
+    Parameters: source (VIIRS_SNPP, MODIS_NRT), coordinates (bounding box
+    or country), day_range (1-10), date, format (json, csv)
+  - API key: NASA_FIRMS_KEY passed as MAP_KEY parameter
+  - VIIRS is higher resolution (375m) than MODIS (1km) — prefer VIIRS
+    for fire pixel counts, use MODIS for longer historical record
+  - Fire pixels need to be filtered: confidence > 75% to exclude
+    false positives (gas flares, industrial heat, volcanoes)
+  - For Brazil land clearing: focus on Cerrado biome (Mato Grosso,
+    Goiás, Tocantins, Bahia western, Maranhão southern). The Amazon
+    biome fires are deforestation — politically different but also
+    signals acreage expansion into new areas
+  - Seasonal patterns: Brazil burning peaks Aug-Sep (dry season), then
+    drops sharply when rains arrive in October. Early start to burning
+    season (July) or late end (October) is itself a signal
+  - For India/SE Asia: focus on Punjab, Haryana (wheat stubble, Oct-Nov),
+    and Thailand/Myanmar (rice straw, Feb-Apr)
+  - Historical fire data: FIRMS has archives back to 2001 (MODIS) and
+    2012 (VIIRS). Need to build year-by-year fire pixel counts for
+    each region for the correlation model
+  - CONAB soybean area data for Brazil, USDA PSD for India rice
+    production — these are the training targets for the regression
+  - Output: weekly fire pixel count by region, deviation from
+    historical, and implied acreage/production signal
+
+  Building...
+
+  fire-crop-monitor-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── firms_client.py           # NASA FIRMS REST API wrapper
+  │   │                             #   (auth, bounding box queries, pagination)
+  │   ├── fire_counter.py           # Filter by confidence, clip to regions,
+  │   │                             #   aggregate fire pixel counts by week
+  │   ├── brazil_clearing.py        # Cerrado + Amazon fire → acreage signal
+  │   │                             #   correlation with CONAB planting data
+  │   ├── asia_burning.py           # India/SE Asia post-harvest burn intensity
+  │   │                             #   → production signal
+  │   ├── historical_baselines.py   # 2001-2025 fire pixel baselines by region
+  │   ├── season_detector.py        # Burning season start/end date tracking
+  │   │                             #   (early start = more clearing than expected)
+  │   ├── deforestation_tracker.py  # Amazon-specific: frontier expansion monitor
+  │   └── report_builder.py         # Fire Monitor report (PDF + heat maps)
+  ├── references/
+  │   ├── firms-api-reference.md    # API endpoints, params, rate limits
+  │   ├── fire-acreage-model.md     # R² coefficients, regression methodology
+  │   ├── biome-boundaries.md       # Cerrado vs Amazon vs Atlantic Forest
+  │   ├── burning-calendar.md       # Expected seasonal patterns by region
+  │   └── methodology.md
+  ├── assets/
+  │   ├── region_bboxes.json        # Bounding boxes for FIRMS queries
+  │   ├── biome_masks.geojson       # Cerrado/Amazon/Pantanal boundaries
+  │   ├── fire_baselines.json       # 2001-2025 weekly fire counts by region
+  │   └── conab_soy_area.csv        # Brazil soybean planted area 2001-2026
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (NASA_FIRMS_KEY read from env)
+  Installed at: ~/.claude/skills/fire-crop-monitor-skill
+
+  Shared to: github.com/acme-trading/fire-crop-monitor-skill
+
+
+--- Late August, burning season in Brazil ---
+
+Analyst: /fire-crop-monitor-skill How's the burning season in Mato Grosso tracking? What does it imply for 2026/27 soy acreage?
+
+Copilot (loading fire-crop-monitor-skill):
+
+  Pulling FIRMS VIIRS data for Cerrado region, last 90 days...
+  Comparing against 2001-2025 historical baselines...
+
+  BRAZIL CERRADO FIRE MONITOR — August 25, 2026
+
+  FIRE PIXEL COUNTS (VIIRS, confidence > 75%)
+
+  | Month    | 2026   | 2025   | 5yr Avg | vs Avg  |
+  |----------|--------|--------|---------|---------|
+  | June     | 8,420  | 6,890  | 7,100   | +18.6%  |
+  | July     | 24,300 | 18,900 | 19,200  | +26.6%  |
+  | Aug 1-25 | 52,800 | 38,400 | 41,500  | +27.2%  |
+
+  TOTAL JUN-AUG: 85,520 (highest since 2020)
+
+  BY SUB-REGION:
+  | Sub-region             | 2026 Fire px | vs 5yr Avg | Signal              |
+  |------------------------|-------------|------------|---------------------|
+  | Mato Grosso (Cerrado)  | 38,200      | +31%       | Strong expansion    |
+  | Goiás                  | 14,800      | +22%       | Moderate expansion  |
+  | Tocantins              | 9,400       | +18%       | Moderate            |
+  | Bahia West (MATOPIBA)  | 12,600      | +42%       | RAPID expansion     |
+  | Maranhão South         | 10,520      | +28%       | Strong expansion    |
+
+  MATOPIBA ALERT: The Bahia West / MATOPIBA frontier shows fire pixel
+  counts 42% above the 5-year average. This is the most active clearing
+  frontier in Brazil — new soybean acreage expanding into former
+  Cerrado grassland. This sub-region has shown the highest fire growth
+  rate for three consecutive years.
+
+  ACREAGE SIGNAL (regression model, R² = 0.82):
+
+  Based on the historical fire-to-acreage correlation, current burning
+  levels project:
+
+  | Metric                     | 2025/26 Actual | 2026/27 Projected |
+  |----------------------------|----------------|-------------------|
+  | Brazil soy planted area    | 46.2M hectares | 48.1M hectares    |
+  | Year-over-year change      |                | +1.9M ha (+4.1%)  |
+  | Implied production (trend) |                | 175-180 MMT       |
+
+  This +4.1% acreage expansion, combined with trend yields, suggests
+  Brazil's 2026/27 soybean crop could reach 175-180 MMT — a new record
+  and 6-11 MMT above the current 2025/26 crop of 169 MMT.
+
+  MARKET IMPLICATION: This is bearish for CBOT soybeans on a 6-12 month
+  horizon. More Brazilian supply = more competition for US exports in
+  the 2026/27 marketing year. However, this is already partially
+  expected — the market consensus is for ~2% acreage growth. The fire
+  data suggests 4%+ is more likely.
+
+  AMAZON BIOME NOTE: Amazon fire detections are also elevated (+35%
+  vs 5yr avg), but this is a separate dynamic — Amazon deforestation
+  is a reputational/regulatory risk for Brazilian exports (EU
+  deforestation regulation), not an acreage expansion signal. Some
+  European buyers may reduce Brazilian soy purchases if Amazon fires
+  make headlines again.
+
+  BURNING SEASON TIMING: The season started 2 weeks early this year
+  (first sustained fires in mid-June vs typical early July). Early start
+  is itself a signal — it indicates farmers had drier conditions and
+  were more aggressive about clearing. This correlates with the upper
+  end of the acreage projection.
+
+
+=============================================================
+SKILL 14: Vessel Tracking — Grain Shipment Intelligence
+=============================================================
+
+The logistics analyst builds a pipeline from AIS vessel data:
+
+User: /agent-skill-creator I want to track grain vessel movements to verify and predict export shipment volumes in real-time. The traditional data sources (USDA Export Inspections, GTT) have 1-4 week lags. But by tracking bulk carrier vessels via AIS (Automatic Identification System), I can see shipments BEFORE they show up in official data. My idea: use a vessel tracking API to monitor Panamax and Capesize bulk carriers departing key grain export ports (Santos, Paranaguá, and São Francisco do Sul in Brazil; Rosario/San Lorenzo in Argentina; US Gulf ports; Odessa/Mykolaiv in Ukraine; Novorossiysk in Russia). When a bulk carrier departs a grain port with a draft indicating full cargo, I can estimate tonnage from the vessel's DWT and draft. By aggregating departures weekly, I can build a near-real-time export volume tracker that leads official data by 2-3 weeks. I have an AIS data subscription — credentials in my env as AIS_API_KEY. The API gives me vessel positions, port calls, vessel particulars (DWT, draft), and ETA. Here's my methodology: references/vessel-export-methodology.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/vessel-export-methodology.pdf...
+
+  Your approach: filter vessels by type (bulk carrier), DWT range (Panamax
+  40-80K DWT, Capesize 80-200K DWT), monitor departures from grain ports,
+  estimate cargo weight from loaded draft vs ballast draft × DWT ratio,
+  classify probable commodity based on port (Santos = soy, Rosario = soy
+  meal, US Gulf = corn/soy), and aggregate into weekly volume estimates.
+  This is essentially building a private export inspection tracker. Let me
+  build it.
+
+  Implicit requirements:
+  - AIS API: vessel positions, port call history, vessel particulars
+    (DWT, current draft, flag, destination). Auth via AIS_API_KEY
+  - Port definitions: specific berth/terminal polygons, not just city
+    coordinates. Santos has grain terminals (Cargill, Bunge, Cofco) and
+    container terminals — need to distinguish
+  - Draft-to-cargo estimation: a Panamax at 14.5m draft (loaded) vs 7m
+    (ballast) carrying 65,000 DWT = approximately 58,000 MT of cargo.
+    The formula: cargo_MT ≈ DWT × (current_draft - ballast_draft) /
+    (loaded_draft - ballast_draft). Accuracy: ±8%
+  - Destination inference: when a vessel departs Santos for "Singapore"
+    or "CNSHA" (Shanghai), the destination tells us the buyer. Vessels
+    to China = soybean. Vessels to EU = soybean meal. Vessels to
+    Egypt/Algeria = wheat
+  - "Line-up" tracking: vessels at anchor or waiting to load = pending
+    exports. Count of vessels in the line-up × average cargo = pipeline
+    volume indicator
+  - Need to separate grain vessels from iron ore, coal, and other bulk
+    commodities at the same ports. Use vessel history: if a Panamax
+    was last at a grain terminal, its current cargo is probably grain
+  - Historical vessel departure data for backtesting: compare estimated
+    vs actual export inspections to calibrate the model
+
+  Building...
+
+  vessel-grain-tracker-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── ais_client.py              # AIS API wrapper (positions, port calls,
+  │   │                              #   vessel particulars, rate limiting)
+  │   ├── port_monitor.py            # Define grain ports, terminal polygons,
+  │   │                              #   monitor arrivals and departures
+  │   ├── cargo_estimator.py         # Draft-to-cargo tonnage estimation
+  │   ├── commodity_classifier.py    # Port + destination + history → probable
+  │   │                              #   commodity (soy, corn, wheat, meal)
+  │   ├── lineup_counter.py          # Vessels at anchor / waiting to load
+  │   ├── weekly_aggregator.py       # Sum departures by port, commodity, dest
+  │   ├── official_comparison.py     # Compare vs USDA Export Inspections when
+  │   │                              #   available (calibration + lead time)
+  │   └── report_builder.py          # Vessel Intelligence Weekly (PDF + maps)
+  ├── references/
+  │   ├── grain-ports.md             # Port locations, terminal IDs, berth polygons
+  │   ├── vessel-types.md            # Panamax/Capesize specs, draft ranges
+  │   ├── cargo-estimation.md        # Draft-to-tonnage formula + accuracy
+  │   ├── destination-mapping.md     # Port codes → country → probable commodity
+  │   └── methodology.md
+  ├── assets/
+  │   ├── port_polygons.geojson      # Grain terminal berth boundaries
+  │   ├── vessel_type_specs.json     # DWT ranges, draft ranges by class
+  │   └── port_commodity_map.json    # Port → most likely commodity
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (AIS_API_KEY read from env)
+  Installed at: ~/.claude/skills/vessel-grain-tracker-skill
+
+  Shared to: github.com/acme-trading/vessel-grain-tracker-skill
+
+
+--- Real-time export tracking ---
+
+Logistics Analyst: /vessel-grain-tracker-skill What's the Brazilian soybean export pace looking like this week? I want to compare to the GTT data we'll get in 2 months.
+
+Copilot (loading vessel-grain-tracker-skill):
+
+  Pulling AIS data for Santos, Paranaguá, São Francisco do Sul...
+  Identifying grain-loaded departures (Panamax/Capesize, draft > 12m)...
+  Estimating cargo tonnage...
+
+  BRAZIL SOYBEAN VESSEL TRACKER — Week of Mar 2-8, 2026
+
+  DEPARTURES FROM GRAIN PORTS (estimated soybean cargo):
+
+  | Port                  | Vessels | Est. Cargo (KMT) | Destinations           |
+  |-----------------------|---------|-------------------|------------------------|
+  | Santos                | 14      | 812               | China 9, EU 3, Egypt 2 |
+  | Paranaguá             | 8       | 456               | China 6, Japan 1, TW 1 |
+  | São Francisco do Sul  | 4       | 228               | China 3, Bangladesh 1  |
+  | WEEKLY TOTAL          | 26      | 1,496             |                        |
+
+  COMPARISON TO PACE:
+  | Metric                    | This Week | Same Week 2025 | YoY Change |
+  |---------------------------|-----------|----------------|------------|
+  | Vessel departures         | 26        | 22             | +18%       |
+  | Estimated tonnage         | 1,496 KMT | 1,280 KMT     | +16.9%     |
+  | 4-week rolling avg        | 1,380 KMT | 1,190 KMT     | +16.0%     |
+
+  DESTINATION BREAKDOWN (all 3 ports combined):
+  | Destination    | Vessels | Tonnage (KMT) | Share  |
+  |----------------|---------|---------------|--------|
+  | China          | 18      | 1,044         | 69.7%  |
+  | EU             | 3       | 174           | 11.6%  |
+  | Egypt          | 2       | 116           | 7.8%   |
+  | Japan          | 1       | 58            | 3.9%   |
+  | Taiwan         | 1       | 58            | 3.9%   |
+  | Bangladesh     | 1       | 46            | 3.1%   |
+
+  LINE-UP (vessels waiting to load as of today):
+  | Port                  | Vessels Waiting | Est. Days to Clear |
+  |-----------------------|-----------------|--------------------|
+  | Santos                | 42              | 18 days (normal)   |
+  | Paranaguá             | 28              | 14 days (normal)   |
+  | São Francisco do Sul  | 11              | 8 days (light)     |
+  | TOTAL                 | 81              |                    |
+
+  The line-up at 81 vessels is consistent with peak export season. This
+  time last year it was 74 vessels — the 9.5% increase aligns with the
+  record 169 MMT crop moving through the pipeline.
+
+  LEAD INDICATOR: Our vessel-based estimate of 1,496 KMT this week will
+  show up in official Brazilian customs (SECEX) data in 3-4 weeks, and
+  in GTT in 6-8 weeks. We're seeing the exports NOW.
+
+  MONTHLY PACE PROJECTION (March 2026):
+  At current weekly pace, Brazil is on track to export ~6.0 MMT of
+  soybeans in March. This would be the highest March on record,
+  surpassing March 2023's 5.5 MMT. The early harvest (90% complete in
+  Mato Grosso) is pushing shipments forward.
+
+  IMPLICATION: When this volume shows up in official SECEX data in late
+  March and GTT data in May, it will confirm that Brazil is front-loading
+  exports. China-bound vessel share at 70% is above the 5-year average
+  of 64%, reinforcing the market share shift we saw in the GTT trade
+  flow analysis.
+
+
+=============================================================
+SKILL 15: Copernicus Sentinel-2 Field-Level NDVI
+=============================================================
+
+For analysts who need to zoom in from country-level to individual
+fields — something NOAA's 4km resolution can't do:
+
+User: /agent-skill-creator Our firm is getting into precision agriculture consulting alongside commodity research. I need a skill that pulls Sentinel-2 satellite imagery from the Copernicus Data Space Ecosystem and computes NDVI at 10-meter resolution for specific farm fields. A farmer or agronomist gives us a field boundary (as a GeoJSON polygon or just a lat/long point with radius), and we compute: (1) current NDVI for that field, (2) NDVI time-series for the current growing season (every cloud-free overpass, roughly every 5 days), (3) comparison to the same field's NDVI in previous years, (4) within-field variability (are parts of the field stressed while others are fine?). The Copernicus Data Space has free API access — I registered at dataspace.copernicus.eu and have OAuth2 credentials. COPERNICUS_CLIENT_ID and COPERNICUS_CLIENT_SECRET are in my env. The Sentinel Hub Process API can compute NDVI server-side using evalscripts (no need to download raw bands). Here's the API docs I saved: references/sentinel-hub-process-api.pdf
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/sentinel-hub-process-api.pdf...
+
+  The Sentinel Hub Process API takes a bounding box, an evalscript
+  (JavaScript that computes NDVI from B04 and B08 bands), and returns
+  a processed GeoTIFF or JSON. Cloud masking is done via the SCL
+  (Scene Classification Layer). This means we don't download raw imagery
+  — the heavy lifting happens server-side. Let me build this.
+
+  Implicit requirements:
+  - Copernicus Data Space OAuth2: POST to identity.dataspace.copernicus.eu
+    with client_id + client_secret to get bearer token
+  - Sentinel Hub Process API: POST to sh.dataspace.copernicus.eu/api/v1/process
+    with evalscript, bounding box, time range, output format
+  - NDVI evalscript: (B08 - B04) / (B08 + B04) — standard formula
+  - Cloud masking: use SCL band, exclude pixels classified as cloud,
+    cloud shadow, snow/ice, or no data
+  - 10m resolution means a 100-hectare field = 100,000 pixels. That's
+    enough resolution to see within-field variability (waterlogged low
+    spots, compacted headlands, variable soil types)
+  - Time-series: query all available scenes for the field in the current
+    growing season. Sentinel-2 revisits every 5 days. After cloud
+    filtering, expect ~3-4 usable scenes per month
+  - Inter-year comparison: pull the same dates from 2023, 2024, 2025
+    for the same field polygon. Normalize by day-of-year
+  - Within-field variability: compute per-pixel NDVI, then generate
+    a coefficient of variation (CV) map. High CV = stressed patches.
+    Also compute zonal stats: mean, P10, P25, P50, P75, P90
+  - Output options: NDVI value (JSON), NDVI map (GeoTIFF colorized),
+    time-series chart (PNG), variability map (PNG)
+  - Rate limits: Copernicus free tier allows 300 requests/minute
+    and 40,000 Processing Units/month. A single field NDVI request
+    uses ~1 PU. We have headroom
+
+  Building...
+
+  sentinel-field-ndvi-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── copernicus_auth.py         # OAuth2 token management (auto-refresh)
+  │   ├── sentinel_client.py         # Sentinel Hub Process API wrapper
+  │   ├── ndvi_calculator.py         # Evalscript builder, NDVI request, cloud mask
+  │   ├── field_timeseries.py        # Growing season NDVI curve for a field
+  │   ├── interyear_compare.py       # Same field, same dates, previous years
+  │   ├── variability_map.py         # Within-field CV map + zonal statistics
+  │   ├── field_health_report.py     # Field Health Report builder (PDF + maps)
+  │   └── batch_processor.py         # Process multiple fields in one run
+  ├── references/
+  │   ├── sentinel-hub-api.md        # Process API endpoints, evalscripts
+  │   ├── ndvi-interpretation.md     # What NDVI values mean by crop and stage
+  │   ├── cloud-masking.md           # SCL classes, filtering strategy
+  │   ├── sentinel2-bands.md         # Band specifications (B04, B08, etc.)
+  │   └── methodology.md
+  ├── assets/
+  │   ├── evalscripts/
+  │   │   ├── ndvi.js                # Standard NDVI evalscript
+  │   │   ├── ndvi_masked.js         # NDVI with cloud masking
+  │   │   └── enhanced_vegetation.js # EVI for dense canopies
+  │   └── ndvi_colormap.json         # Color ramp for NDVI visualization
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (COPERNICUS_CLIENT_ID/SECRET read from env)
+  Installed at: ~/.claude/skills/sentinel-field-ndvi-skill
+
+  Shared to: github.com/acme-trading/sentinel-field-ndvi-skill
+
+
+--- An agronomist client asks about their field ---
+
+Agronomist: /sentinel-field-ndvi-skill Check the corn field for the Petersen farm. Here's the boundary: data/petersen-north-field.geojson. How does it look compared to last year?
+
+Copilot (loading sentinel-field-ndvi-skill):
+
+  Authenticating with Copernicus Data Space... token obtained.
+  Reading field boundary: 156 hectares, Boone County, Iowa
+  Querying Sentinel-2 scenes for Jul 1 - Jul 15, 2026...
+  3 cloud-free scenes found: Jul 2, Jul 7, Jul 12.
+  Computing NDVI...
+
+  FIELD HEALTH REPORT — Petersen Farm, North Field (156 ha)
+  Boone County, Iowa | Corn | July 15, 2026
+
+  CURRENT NDVI (July 12 scene):
+
+  | Metric          | Value | Interpretation                    |
+  |-----------------|-------|-----------------------------------|
+  | Mean NDVI       | 0.72  | Good (expected: 0.75-0.85)        |
+  | P10 (worst 10%) | 0.48  | Stress in parts of the field      |
+  | P25             | 0.64  | Below expected                    |
+  | P50 (median)    | 0.74  | Normal                            |
+  | P90 (best 10%)  | 0.84  | Excellent                         |
+  | Coef. Variation | 0.16  | Moderate variability (>0.12 = flag)|
+
+  WITHIN-FIELD VARIABILITY MAP:
+  [Generated: reports/petersen-north-variability-2026-07-12.tif]
+
+  The northwest corner (approx. 22 hectares) shows NDVI of 0.45-0.55,
+  significantly below the field average. This area corresponds to the
+  lower-elevation zone that was waterlogged during the June 18 heavy
+  rain event (38mm in 2 hours per Open-Meteo data). The saturated
+  soil likely damaged root development during V4-V6 stage. The rest
+  of the field looks healthy.
+
+  YEAR-OVER-YEAR COMPARISON (same dates ±3 days):
+
+  | Year | Mean NDVI (early Jul) | Notes                           |
+  |------|-----------------------|---------------------------------|
+  | 2024 | 0.81                  | Excellent year, above-trend yield|
+  | 2025 | 0.78                  | Good, trend yield               |
+  | 2026 | 0.72                  | Below recent years              |
+
+  The field is tracking 8-12% below the previous two years. Most of
+  the deficit is concentrated in that NW low spot. If we exclude the
+  damaged 22 hectares, the remaining 134 hectares have a mean NDVI
+  of 0.77 — close to normal.
+
+  GROWING SEASON NDVI CURVE:
+  [Generated: reports/petersen-north-timeseries-2026.png]
+
+  The NDVI curve shows a normal green-up trajectory until late June,
+  then a plateau at 0.72 instead of the expected peak of 0.82-0.85.
+  This plateau coincides with the waterlogging event. The NW corner
+  is pulling the whole-field average down.
+
+  RECOMMENDATION FOR THE AGRONOMIST:
+  - The NW 22 hectares will likely yield 140-150 bu/ac vs the field
+    average of 185-195 bu/ac. That's a 30-40 bu/ac loss on 14% of
+    the field = roughly 4-6 bu/ac whole-field yield reduction.
+  - Consider variable-rate nitrogen application for the stressed zone
+    if there's still time (doubtful at V12+ stage)
+  - For next year: tile drainage in the NW low spot would prevent
+    recurrence. The field's yield history likely shows this same zone
+    underperforming in every wet year
+
+
+=============================================================
+FINAL TEAM SKILL LIBRARY — FULL DATA PIPELINE STACK
+=============================================================
+
+  SKILL                          DATA SOURCES                      PIPELINE TYPE
+  ────────────────────────────────────────────────────────────────────────────────
+  ANALYSIS SKILLS (interpret data):
+  wasde-analyzer-skill           USDA WASDE PDF, Bloomberg         PDF parsing
+  crop-weather-weekly-skill      USDA NASS, NOAA, Drought Mon.     Multi-source aggregation
+  basis-export-tracker-skill     DTN, USDA FAS, barge freight      Web scraping + API
+  coffee-fundamental-skill       CEPEA, ICE, CFTC, ECMWF          Multi-source aggregation
+  yield-predictor-skill          Open-Meteo + NASS historical      Weather → yield regression
+  crop-anomaly-scanner-skill     Open-Meteo (32 regions)           Real-time anomaly detection
+  planting-window-skill          Open-Meteo forecast + archive     Decision support
+
+  DATA PLATFORM SKILLS (query structured APIs):
+  psd-balance-sheet-skill        USDA PSD API                      REST API → balance sheets
+  trade-flow-intel-skill         GTT REST API                      REST API → trade matrices
+  supply-chain-risk-skill        PSD + GTT + FAS combined          Multi-API correlation
+
+  DATA INGESTION SKILLS (raw data → actionable intelligence):
+  noaa-crop-monitor-skill        NOAA STAR GeoTIFF (wget)          Raster ingestion pipeline
+  fire-crop-monitor-skill        NASA FIRMS REST API               Fire → acreage signal
+  vessel-grain-tracker-skill     AIS vessel tracking API           Shipping → export estimates
+  sentinel-field-ndvi-skill      Copernicus Sentinel-2 API         Satellite → field health
+  parana-river-risk-skill        Open-Meteo watershed model        Weather → river level prediction
+
+  ORCHESTRATION SKILLS:
+  seasonal-spread-skill          CBOT historical                   Quantitative models
+  client-briefing-skill          Calls other skills internally     Report compilation
+
+  Environment variables for the full stack:
+
+    # Weather
+    export OPEN_METEO_API_KEY="your-professional-api-key"
+
+    # Government data
+    export PSD_API_KEY="your-usda-fas-api-key"
+
+    # Trade data
+    export GTT_USER_ID="your-gtt-username"
+    export GTT_PASSWORD="your-gtt-password"
+
+    # Satellite
+    export NASA_FIRMS_KEY="your-earthdata-map-key"
+    export COPERNICUS_CLIENT_ID="your-copernicus-client-id"
+    export COPERNICUS_CLIENT_SECRET="your-copernicus-client-secret"
+
+    # Vessel tracking
+    export AIS_API_KEY="your-ais-subscription-key"
+
+  16 skills. 8 data sources. One team.
+
+  The junior analyst who joined last month can type:
+    /noaa-crop-monitor-skill Morning scan
+    /vessel-grain-tracker-skill Brazil soy exports this week
+    /fire-crop-monitor-skill Cerrado burning season update
+
+  And get the same output that took the senior team 6 months to learn
+  how to produce manually. The institutional knowledge isn't in people's
+  heads anymore — it's in the skills. If someone leaves, the skills stay.
+  If someone joins, they're productive on day one.
+
+  That's what a skill library looks like when a team takes it seriously.
