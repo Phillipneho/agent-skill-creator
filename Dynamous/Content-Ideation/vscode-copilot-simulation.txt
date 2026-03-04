@@ -2781,8 +2781,9 @@ FINAL TEAM SKILL LIBRARY — FULL DATA PIPELINE STACK
   WORKFLOW SKILLS (process automation):
   publication-compliance-skill    Internal style/legal/citation rules  Pre-submission compliance check
   email-thread-intel-skill        Email threads (.eml/.msg/raw text)   Intent extraction & action items
+  agdb-query-assistant-skill      Internal PostgreSQL data warehouse   Natural language → safe SQL queries
 
-  18 skills. 8 data sources. One team.
+  19 skills. 9 data sources. One team.
 
   The junior analyst who joined last month can type:
     /noaa-crop-monitor-skill Morning scan
@@ -3821,3 +3822,777 @@ The ROI is immediate and measurable:
   The skill pays for itself the first time it catches a scope change
   you would have missed, or surfaces an overdue action item that was
   about to become a client complaint.
+
+
+=============================================================
+SKILL 18: Internal Database Query Assistant — Onboarding
+Non-Technical Analysts to Company Data
+=============================================================
+
+This is arguably the most common enterprise problem: the company has
+a rich internal database (or data warehouse, or lakehouse) with years
+of proprietary data — trade records, position history, client
+portfolios, internal forecasts, broker contacts, shipping logs. The
+data team built it, documented it (partially), and gave everyone
+read-only credentials. The problem? Most analysts can't write SQL.
+They depend on the data team for every ad-hoc query, wait 2-3 days
+for a response, and often get back something different from what they
+asked for because the request was ambiguous. This skill turns the
+database documentation and schema into a query-writing assistant that
+knows the company's specific tables, naming conventions, gotchas, and
+business logic — so non-technical analysts can get answers in seconds
+instead of days.
+
+User: /agent-skill-creator Our firm has an internal PostgreSQL data warehouse called "agdb" that contains 15 years of proprietary commodity data — trade executions, position history, client order flow, internal S&D model outputs, broker price indications, shipping fixtures, and warehouse stock reports. The data team documented it in a Confluence-style wiki that I've exported here: references/agdb-schema-docs.pdf (142 pages — every table, every column, every relationship). The problem is nobody outside the data team knows how to query it. I'm one of 12 commodity analysts who have read-only access (via a connection string in env as AGDB_READ_DSN) but I don't really know SQL. When I need data, I send a Slack message to the data team and wait 1-3 days. Sometimes they misunderstand what I need and I wait another day for a revision. I want a skill that: (1) understands our entire schema — all 87 tables, the relationships, the naming conventions, the business logic embedded in the column definitions, (2) lets me ask questions in plain English and generates safe, read-only SQL queries, (3) EXPLAINS what the query does before running it so I can verify it's what I meant, (4) runs the query and formats the results into a clean table or chart, (5) knows our firm-specific conventions — like that "position" means net position (long minus short), that our fiscal year starts April 1, that prices in the trades table are in cents per bushel for grains but dollars per metric tonne for oilseeds, and (6) has guardrails so I can't accidentally run something destructive or pull restricted client data. I also want my colleagues to use this — some know basic SQL, some know zero. Here's a sample of common queries the data team runs for us: references/common-queries-catalog.pdf (their top 50 most-requested queries with SQL).
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/agdb-schema-docs.pdf (142 pages)...
+  Reading references/common-queries-catalog.pdf...
+
+  This is a schema-aware query generation skill with safety guardrails.
+  The 142-page schema doc is the gold — it contains the institutional
+  knowledge that makes queries correct (fiscal year conventions, unit
+  differences, net position logic). The top-50 query catalog is the
+  training set — these are proven-correct queries I can decompose into
+  patterns. Let me build this.
+
+  Implicit requirements from your documents:
+
+  SCHEMA OVERVIEW (from agdb-schema-docs.pdf):
+  - 87 tables across 8 schemas:
+    trading.*     — 14 tables (executions, positions, orders, fills)
+    market.*      — 11 tables (prices, curves, settlements, vol surfaces)
+    research.*    — 9 tables (forecasts, model outputs, S&D balances)
+    shipping.*    — 12 tables (fixtures, vessel tracking, freight rates)
+    warehouse.*   — 8 tables (stocks, receipts, deliveries, locations)
+    clients.*     — 10 tables (accounts, portfolios, order history)
+    reference.*   — 15 tables (instruments, exchanges, brokers, regions)
+    audit.*       — 8 tables (change logs, access logs, query logs)
+  - Naming convention: snake_case everywhere, e.g. trading.daily_positions,
+    market.settlement_prices
+  - Primary keys: all tables use surrogate integer IDs (table_id)
+  - Foreign keys: instrument_id links to reference.instruments across
+    all schemas. client_id links to clients.accounts
+  - Temporal columns: trade_date (date), created_at (timestamp with tz),
+    updated_at (timestamp). Most analytical queries use trade_date
+  - Soft deletes: is_deleted boolean on most tables (must filter!)
+
+  FIRM-SPECIFIC CONVENTIONS (critical for correct queries):
+  - "Position" = net position (long_qty - short_qty), NOT gross
+  - Fiscal year: April 1 – March 31 (FY2026 = Apr 2025 – Mar 2026)
+  - Crop year: varies by commodity:
+    US corn/soy: Sep 1 – Aug 31
+    US wheat: Jun 1 – May 31
+    Brazil soy: Feb 1 – Jan 31
+    Coffee: Oct 1 – Sep 30
+  - Price units in trading.executions:
+    Grains (corn, wheat, oats): cents per bushel (divide by 100 for $/bu)
+    Oilseeds (soybeans, canola): cents per bushel
+    Oilseed products (meal, oil): dollars per short ton (meal), cents
+      per pound (oil)
+    Coffee: cents per pound
+    Sugar: cents per pound
+    Cotton: cents per pound
+    Freight: $/MT (worldscale for tankers)
+  - When analysts say "P&L", they mean realized + unrealized, marked to
+    the prior day's settlement (market.settlement_prices)
+  - The research.forecasts table contains both published and draft
+    forecasts. Always filter: status = 'published' unless explicitly
+    looking at drafts
+  - The clients.* schema is RESTRICTED: only client_id, region, and
+    segment columns are accessible to analysts. Personal details
+    (name, contact, AUM) require compliance approval
+
+  SAFETY REQUIREMENTS:
+  - READ-ONLY: connection uses a read-only PostgreSQL role. But the
+    skill should also validate queries before execution — no INSERT,
+    UPDATE, DELETE, DROP, TRUNCATE, ALTER, CREATE, GRANT
+  - QUERY LIMITS: auto-append LIMIT 10000 to any query without an
+    explicit LIMIT (prevent accidental full-table scans on 500M+ row
+    tables)
+  - CLIENT DATA REDACTION: if a query touches clients.* schema,
+    automatically exclude name, email, phone, address columns. Replace
+    with client_id only
+  - AUDIT LOGGING: log every query executed (query text, user, timestamp,
+    row count) to a local file for the data team to review
+  - EXPLAIN BEFORE RUN: always show the generated SQL and a plain-English
+    explanation before executing. User must confirm or modify
+  - TIMEOUT: 30-second query timeout. If exceeded, suggest adding
+    filters or ask the data team for help
+  - NO JOINS ON AUDIT.*: the audit schema is for compliance only — never
+    join it into analytical queries
+
+  Building...
+
+  agdb-query-assistant-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── query_generator.py        # Natural language → SQL translation
+  │   │                             #   using schema context + conventions
+  │   ├── schema_loader.py          # Parse schema docs into structured
+  │   │                             #   metadata (tables, columns, types,
+  │   │                             #   relationships, conventions)
+  │   ├── query_validator.py        # Safety checks: read-only enforcement,
+  │   │                             #   LIMIT injection, client data
+  │   │                             #   redaction, audit schema blocking
+  │   ├── query_explainer.py        # SQL → plain English explanation
+  │   │                             #   ("This query finds all soybean
+  │   │                             #   trades from the last 30 days...")
+  │   ├── query_executor.py         # Run query via AGDB_READ_DSN, handle
+  │   │                             #   timeouts, format results
+  │   ├── result_formatter.py       # Output as table, CSV, chart, or
+  │   │                             #   summary depending on result shape
+  │   ├── unit_converter.py         # Auto-convert cents/bu to $/bu,
+  │   │                             #   $/short ton to $/MT, etc. based
+  │   │                             #   on commodity context
+  │   ├── common_queries.py         # Pre-built query templates from the
+  │   │                             #   top-50 catalog (parameterized)
+  │   └── audit_logger.py           # Log all executed queries locally
+  ├── references/
+  │   ├── schema-summary.md         # Human-readable schema overview
+  │   │                             #   (condensed from 142-page PDF)
+  │   ├── table-catalog.md          # All 87 tables with descriptions
+  │   ├── column-conventions.md     # Price units, date conventions,
+  │   │                             #   fiscal year, crop year logic
+  │   ├── relationship-map.md       # Foreign key graph (what joins what)
+  │   ├── common-patterns.md        # Top-50 query patterns decomposed
+  │   ├── restricted-tables.md      # Client data restrictions, audit
+  │   │                             #   schema rules
+  │   ├── gotchas.md                # is_deleted filter, draft forecasts,
+  │   │                             #   timezone handling, null semantics
+  │   └── methodology.md
+  ├── assets/
+  │   ├── schema_metadata.json      # Machine-readable schema (87 tables,
+  │   │                             #   ~1,200 columns, all FK relationships)
+  │   ├── unit_map.json             # Commodity → price unit mapping
+  │   ├── crop_year_map.json        # Commodity → crop year start month
+  │   ├── fiscal_calendar.json      # FY mapping (FY2026 = Apr 2025–Mar 2026)
+  │   ├── restricted_columns.json   # Columns that require redaction
+  │   ├── query_templates.json      # Parameterized top-50 queries
+  │   └── sql_blocklist.json        # Prohibited SQL keywords/patterns
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (AGDB_READ_DSN read from env, read-only enforced,
+            client data redacted, audit logging enabled)
+  Installed at: ~/.agents/skills/agdb-query-assistant-skill
+
+  Shared to: github.com/acme-trading/agdb-query-assistant-skill
+
+
+--- A non-technical analyst asks their first question ---
+
+Analyst (no SQL experience): /agdb-query-assistant-skill What was our total soybean trading volume last month?
+
+Copilot (loading agdb-query-assistant-skill):
+
+  Loading schema context for agdb...
+
+  I'll query the trading.executions table for soybean trades in
+  February 2026. A few things I need to account for:
+
+  - "Soybeans" maps to instrument_group = 'soybeans' in
+    reference.instruments (includes CBOT soybeans, soybean meal,
+    soybean oil). Did you mean just soybeans, or the whole complex?
+  - "Volume" could mean: number of contracts (trade_qty), notional
+    value (trade_qty × price × multiplier), or metric tonnes
+    (trade_qty × contract_size_mt)
+  - "Last month" = February 2026 (Feb 1–28)
+
+  I'll assume you mean the soybeans complex (beans + meal + oil),
+  measured in contracts, for February 2026. Let me know if you
+  meant something different.
+
+  Here's the query I'd run:
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  SELECT                                                  │
+  │    i.instrument_name,                                    │
+  │    COUNT(*) AS num_trades,                               │
+  │    SUM(e.trade_qty) AS total_contracts,                  │
+  │    SUM(e.trade_qty * i.contract_size_mt) AS total_mt     │
+  │  FROM trading.executions e                               │
+  │  JOIN reference.instruments i                            │
+  │    ON e.instrument_id = i.instrument_id                  │
+  │  WHERE i.instrument_group = 'soybeans'                   │
+  │    AND e.trade_date >= '2026-02-01'                      │
+  │    AND e.trade_date < '2026-03-01'                       │
+  │    AND e.is_deleted = FALSE                              │
+  │  GROUP BY i.instrument_name                              │
+  │  ORDER BY total_contracts DESC;                          │
+  └─────────────────────────────────────────────────────────┘
+
+  PLAIN ENGLISH: "Find all soybean complex trades (soybeans, meal, oil)
+  executed in February 2026 that haven't been deleted. Count the number
+  of trades and sum the contracts and metric tonnes, broken down by
+  specific instrument."
+
+  SAFETY CHECK: ✓ Read-only (SELECT only)
+  SAFETY CHECK: ✓ No client data accessed
+  SAFETY CHECK: ✓ is_deleted filter applied
+  SAFETY CHECK: ✓ Date range bounded (won't scan full history)
+
+  Run this query? [Yes / Modify / Cancel]
+
+Analyst: Yes
+
+Copilot:
+
+  Running query... (0.3 seconds, 4 rows returned)
+
+  SOYBEAN COMPLEX TRADING VOLUME — February 2026
+
+  | Instrument        | Trades | Contracts | Metric Tonnes |
+  |-------------------|--------|-----------|---------------|
+  | CBOT Soybeans     | 342    | 18,450    | 2,518,418     |
+  | CBOT Soybean Meal | 198    | 9,200     | 920,000       |
+  | CBOT Soybean Oil  | 156    | 7,800     | 424,322       |
+  | DCE Soybeans No.1 | 28     | 1,400     | 14,000        |
+  | TOTAL             | 724    | 36,850    | 3,876,740     |
+
+  Notes:
+  - Metric tonnes are calculated from contract size (CBOT soybeans =
+    136.08 MT/contract, CBOT meal = 100 ST ≈ 90.7 MT, CBOT oil =
+    60,000 lbs ≈ 27.2 MT per contract, DCE = 10 MT/contract)
+  - This includes both buy and sell sides. Our NET volume (buys minus
+    sells) would require a different query — let me know if you want
+    that instead
+  - DCE soybeans volume is low — that's normal, we rarely trade
+    Dalian directly
+
+  Query logged to audit/query-log-2026-03-04.csv
+
+
+--- The analyst digs deeper with a follow-up ---
+
+Analyst: /agdb-query-assistant-skill How does that compare to the same month last year? And show me the trend for the last 12 months.
+
+Copilot (loading agdb-query-assistant-skill):
+
+  Good follow-up. I'll expand the date range to Mar 2025 – Feb 2026
+  (12 months) and include Feb 2025 for the year-over-year comparison.
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  SELECT                                                  │
+  │    DATE_TRUNC('month', e.trade_date) AS month,           │
+  │    SUM(e.trade_qty) AS total_contracts,                  │
+  │    SUM(e.trade_qty * i.contract_size_mt) AS total_mt,    │
+  │    COUNT(*) AS num_trades                                │
+  │  FROM trading.executions e                               │
+  │  JOIN reference.instruments i                            │
+  │    ON e.instrument_id = i.instrument_id                  │
+  │  WHERE i.instrument_group = 'soybeans'                   │
+  │    AND e.trade_date >= '2025-02-01'                      │
+  │    AND e.trade_date < '2026-03-01'                       │
+  │    AND e.is_deleted = FALSE                              │
+  │  GROUP BY DATE_TRUNC('month', e.trade_date)              │
+  │  ORDER BY month;                                         │
+  └─────────────────────────────────────────────────────────┘
+
+  PLAIN ENGLISH: "Sum soybean complex contracts by month for the last
+  13 months (Feb 2025 through Feb 2026) to show the trend and enable
+  a year-over-year comparison."
+
+  Run this query? [Yes / Modify / Cancel]
+
+Analyst: Yes
+
+Copilot:
+
+  Running query... (0.8 seconds, 13 rows returned)
+
+  SOYBEAN COMPLEX — MONTHLY TRADING VOLUME (contracts)
+
+  | Month    | Contracts | vs Prev Month | Trades |
+  |----------|-----------|---------------|--------|
+  | Feb 2025 | 31,200    |               | 612    |
+  | Mar 2025 | 34,800    | +11.5%        | 688    |
+  | Apr 2025 | 29,400    | -15.5%        | 571    |
+  | May 2025 | 33,100    | +12.6%        | 649    |
+  | Jun 2025 | 38,200    | +15.4%        | 741    |
+  | Jul 2025 | 42,500    | +11.3%        | 822    |
+  | Aug 2025 | 35,600    | -16.2%        | 694    |
+  | Sep 2025 | 30,200    | -15.2%        | 589    |
+  | Oct 2025 | 28,800    | -4.6%         | 562    |
+  | Nov 2025 | 32,400    | +12.5%        | 634    |
+  | Dec 2025 | 26,100    | -19.4%        | 508    |
+  | Jan 2026 | 34,500    | +32.2%        | 672    |
+  | Feb 2026 | 36,850    | +6.8%         | 724    |
+
+  YEAR-OVER-YEAR: Feb 2026 (36,850) vs Feb 2025 (31,200) = +18.1%
+
+  TREND OBSERVATIONS:
+  - Volume peaked in July 2025 (42,500 contracts) — coincides with
+    the Argentina drought scare that drove CBOT to $13.40
+  - December 2025 was the low point (26,100) — typical year-end
+    position flattening before FY close (our fiscal year ends March 31)
+  - January–February 2026 rebound (+32% and +7%) likely driven by the
+    current Argentina drought driving renewed speculative activity
+  - YoY growth of 18% suggests the desk is more active this year,
+    possibly due to higher volatility creating more trading opportunities
+
+  [Chart generated: reports/soy-volume-trend-12m.png]
+
+
+--- A more experienced analyst writes a complex question ---
+
+Senior Analyst: /agdb-query-assistant-skill I need to see our net soybean position by trader, broken down by contract month, as of close of business yesterday. Include the average entry price and the mark-to-market P&L using yesterday's settlement. I need this for the weekly risk meeting.
+
+Copilot (loading agdb-query-assistant-skill):
+
+  This requires joining 3 tables: trading.daily_positions (net position
+  by trader and instrument), reference.instruments (contract details),
+  and market.settlement_prices (yesterday's marks). The P&L calculation
+  uses the firm's convention: (settlement_price - avg_entry_price) ×
+  net_qty × contract_multiplier, with the sign convention that positive
+  = profit on longs, negative = loss on longs.
+
+  Important conventions:
+  - Prices in trading.daily_positions.avg_entry_price are in CENTS per
+    bushel (firm convention for grains). Settlement prices in
+    market.settlement_prices are also in cents per bushel.
+  - The P&L output should be in DOLLARS (not cents). So the formula
+    includes a /100 conversion.
+  - CBOT soybean contract multiplier = 5,000 bushels
+  - I need to handle both outright and spread positions. The
+    daily_positions table has a position_type column ('outright' or
+    'spread') — I'll include both but flag them.
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  SELECT                                                  │
+  │    p.trader_name,                                        │
+  │    i.instrument_name,                                    │
+  │    i.contract_month,                                     │
+  │    p.position_type,                                      │
+  │    p.net_qty AS net_contracts,                           │
+  │    ROUND(p.avg_entry_price / 100.0, 4) AS avg_entry_usd,│
+  │    ROUND(s.settlement_price / 100.0, 4) AS settle_usd,  │
+  │    ROUND(                                                │
+  │      (s.settlement_price - p.avg_entry_price)            │
+  │      * p.net_qty * i.contract_multiplier                 │
+  │      / 100.0, 2                                          │
+  │    ) AS mtm_pnl_usd                                     │
+  │  FROM trading.daily_positions p                          │
+  │  JOIN reference.instruments i                            │
+  │    ON p.instrument_id = i.instrument_id                  │
+  │  JOIN market.settlement_prices s                         │
+  │    ON p.instrument_id = s.instrument_id                  │
+  │    AND s.price_date = '2026-03-03'                       │
+  │  WHERE i.instrument_group = 'soybeans'                   │
+  │    AND p.position_date = '2026-03-03'                    │
+  │    AND p.is_deleted = FALSE                              │
+  │    AND p.net_qty != 0                                    │
+  │  ORDER BY p.trader_name, i.contract_month;               │
+  └─────────────────────────────────────────────────────────┘
+
+  PLAIN ENGLISH: "For each trader, show their net soybean position
+  by contract month as of March 3, 2026. Convert prices from cents
+  to dollars. Calculate mark-to-market P&L by comparing each trader's
+  average entry price to yesterday's settlement, multiplied by their
+  net contracts and the contract multiplier (5,000 bushels). Exclude
+  flat positions (net_qty = 0) and deleted records."
+
+  SAFETY CHECK: ✓ Read-only
+  SAFETY CHECK: ✓ No client data
+  SAFETY CHECK: ✓ is_deleted filtered
+  SAFETY CHECK: ✓ Single date (no full-table scan)
+
+  Run this query? [Yes / Modify / Cancel]
+
+Senior Analyst: Yes
+
+Copilot:
+
+  Running query... (0.4 seconds, 18 rows returned)
+
+  NET SOYBEAN POSITION BY TRADER — COB March 3, 2026
+
+  | Trader       | Contract   | Type     | Net Lots | Avg Entry | Settle  | MTM P&L ($)    |
+  |--------------|------------|----------|----------|-----------|---------|----------------|
+  | Chen, David  | May-26     | outright | +340     | $10.8200  | $10.9450| +$212,500.00   |
+  | Chen, David  | Jul-26     | outright | +180     | $10.9600  | $11.0800| +$108,000.00   |
+  | Chen, David  | May/Jul    | spread   | -120     | -$0.1400  | -$0.1350| +$3,000.00     |
+  | Lopez, Ana   | May-26     | outright | -200     | $11.0400  | $10.9450| +$95,000.00    |
+  | Lopez, Ana   | Nov-26     | outright | +150     | $10.4200  | $10.5600| +$105,000.00   |
+  | Patel, Raj   | May-26     | outright | +420     | $10.7800  | $10.9450| +$351,750.00   |
+  | Patel, Raj   | Jul-26     | outright | +280     | $10.8400  | $11.0800| +$336,000.00   |
+  | Patel, Raj   | May/Jul    | spread   | +200     | -$0.0600  | -$0.1350| -$75,000.00    |
+  | ...          | ...        | ...      | ...      | ...       | ...     | ...            |
+
+  DESK SUMMARY:
+  | Trader       | Net Outrights | Gross Lots | Total MTM P&L  |
+  |--------------|---------------|------------|----------------|
+  | Chen, David  | +400          | 640        | +$323,500      |
+  | Lopez, Ana   | -50           | 350        | +$200,000      |
+  | Patel, Raj   | +500          | 900        | +$612,750      |
+  | DESK TOTAL   | +850          | 1,890      | +$1,136,250    |
+
+  NOTES FOR YOUR RISK MEETING:
+  - Desk is net long 850 soybean contracts (~115,830 MT). This is
+    within the 1,000-contract desk limit per the risk policy
+  - Patel has the largest position (500 net lots, $613K MTM). His
+    May/Jul spread is underwater (-$75K) while outrights are up big
+  - Lopez is the only trader net short (-50 lots). Her short May
+    position is profitable — she sold near the high
+  - If March WASDE (tomorrow) surprises bearish, the desk's +850 net
+    long is exposed. A $0.20/bu decline = -$850K to the desk P&L
+
+
+--- A brand-new hire who has never seen the database ---
+
+New Analyst (first week): /agdb-query-assistant-skill I just joined the team. I'm supposed to update the weekly S&D balance sheet but I don't know where the data lives. Where are the production, consumption, and trade numbers? And how are they organized?
+
+Copilot (loading agdb-query-assistant-skill):
+
+  Welcome aboard! The S&D data lives in the research.* schema. Let me
+  walk you through the tables you'll need for the weekly balance sheet.
+
+  YOUR KEY TABLES:
+
+  1. research.sd_balances — The main S&D table
+     This is where the team's published balance sheets live. One row
+     per commodity × country × crop year × balance item × forecast date.
+
+     Key columns:
+     - commodity      (e.g. 'soybeans', 'corn', 'wheat')
+     - country        (ISO 3166-1 alpha-2: 'US', 'BR', 'AR', 'CN')
+     - crop_year      (e.g. '2025/26' — note: slash format, not dash)
+     - item           (e.g. 'production', 'crush', 'exports', 'imports',
+                       'feed_use', 'ending_stocks', 'beginning_stocks')
+     - value_mt       (metric tonnes — ALL values are in MT, never bushels)
+     - forecast_date  (date the estimate was published internally)
+     - status         ('published' or 'draft' — always filter for
+                       'published' unless James tells you otherwise)
+     - analyst_id     (who created this estimate)
+
+  2. research.sd_history — Historical revisions
+     Every time someone updates a balance sheet number, the old value
+     is preserved here. Useful for tracking how your team's estimates
+     evolved over time (what did we think in January vs what we think
+     now).
+
+  3. research.model_outputs — The quantitative model results
+     The quant team runs regression models for yield, demand, etc.
+     Their outputs land here. The analysts then review and adjust
+     these before publishing to sd_balances.
+
+  4. reference.crop_years — Crop year calendar
+     Maps crop_year strings to actual date ranges by commodity.
+     Critical because '2025/26' means different dates for corn
+     (Sep 1, 2025 – Aug 31, 2026) vs wheat (Jun 1, 2025 – May 31, 2026).
+
+  THE WEEKLY BALANCE SHEET WORKFLOW:
+  Your weekly task is to:
+  1. Pull the LATEST published balance for each commodity
+  2. Compare to the PREVIOUS week's balance
+  3. Note what changed and why
+  4. Publish in the weekly report
+
+  Here's the query to get the latest US soybeans balance sheet:
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  SELECT                                                  │
+  │    b.item,                                               │
+  │    ROUND(b.value_mt / 1000000.0, 2) AS value_mmt,       │
+  │    b.forecast_date,                                      │
+  │    a.analyst_name                                        │
+  │  FROM research.sd_balances b                             │
+  │  JOIN reference.analysts a                               │
+  │    ON b.analyst_id = a.analyst_id                        │
+  │  WHERE b.commodity = 'soybeans'                          │
+  │    AND b.country = 'US'                                  │
+  │    AND b.crop_year = '2025/26'                           │
+  │    AND b.status = 'published'                            │
+  │    AND b.forecast_date = (                               │
+  │      SELECT MAX(forecast_date)                           │
+  │      FROM research.sd_balances                           │
+  │      WHERE commodity = 'soybeans'                        │
+  │        AND country = 'US'                                │
+  │        AND crop_year = '2025/26'                         │
+  │        AND status = 'published'                          │
+  │    )                                                     │
+  │  ORDER BY                                                │
+  │    CASE b.item                                           │
+  │      WHEN 'beginning_stocks' THEN 1                      │
+  │      WHEN 'production' THEN 2                            │
+  │      WHEN 'imports' THEN 3                               │
+  │      WHEN 'total_supply' THEN 4                          │
+  │      WHEN 'crush' THEN 5                                 │
+  │      WHEN 'exports' THEN 6                               │
+  │      WHEN 'feed_use' THEN 7                              │
+  │      WHEN 'residual' THEN 8                              │
+  │      WHEN 'total_use' THEN 9                             │
+  │      WHEN 'ending_stocks' THEN 10                        │
+  │    END;                                                  │
+  └─────────────────────────────────────────────────────────┘
+
+  PLAIN ENGLISH: "Get the most recently published US soybeans 2025/26
+  balance sheet, with each line item in million metric tonnes, ordered
+  in standard S&D format (supply items first, then demand, then stocks)."
+
+  Run this query? [Yes / Modify / Cancel]
+
+New Analyst: Yes
+
+Copilot:
+
+  Running query... (0.2 seconds, 10 rows returned)
+
+  US SOYBEANS 2025/26 BALANCE SHEET (latest internal estimate)
+  Published: March 3, 2026 | Analyst: Maria Santos
+
+  | Item              | MMT     |
+  |-------------------|---------|
+  | Beginning Stocks  | 9.52    |
+  | Production        | 118.84  |
+  | Imports           | 0.68    |
+  | TOTAL SUPPLY      | 129.04  |
+  | Crush             | 63.50   |
+  | Exports           | 49.67   |
+  | Feed & Residual   | 4.90    |
+  | Seed & Other      | 5.22    |
+  | TOTAL USE         | 123.29  |
+  | ENDING STOCKS     | 5.75    |
+
+  This is YOUR TEAM'S estimate, not USDA's. USDA's February WASDE
+  had ending stocks at 10.34 MMT (281 million bushels). Your team
+  is MUCH tighter at 5.75 MMT — which is why the desk is net long.
+  The difference is mainly in exports: your team has 49.67 MMT vs
+  USDA's 47.90 MMT.
+
+  USEFUL COMMANDS FOR YOUR FIRST WEEK:
+
+  Ask me:
+  - "Show me how our estimate changed over the last 4 weeks" (revision
+    tracking from sd_history)
+  - "Compare our balance to USDA" (if USDA data is in market.external_sd)
+  - "What's the Brazil balance sheet?" (same query, country = 'BR')
+  - "Who last updated the corn balance?" (analyst_id + forecast_date)
+  - "Show me all commodities we cover" (distinct commodities in
+    sd_balances)
+
+  I'll generate the SQL, explain it, and run it — you don't need to
+  learn SQL. But I'll show you every query so you start to recognize
+  the patterns. Most analysts pick up enough SQL to modify queries
+  within 2-3 weeks of using this skill.
+
+
+--- An analyst asks something the skill should refuse ---
+
+Analyst: /agdb-query-assistant-skill Show me the full client list with their AUM and contact details. I need to send out the weekly report.
+
+Copilot (loading agdb-query-assistant-skill):
+
+  ⛔ RESTRICTED DATA REQUEST
+
+  The clients.accounts table contains personally identifiable
+  information (name, email, phone, address) and sensitive financial
+  data (AUM, portfolio details) that are classified as RESTRICTED
+  under the firm's data governance policy.
+
+  Your read-only database role can see:
+  - client_id (anonymized identifier)
+  - region (e.g., 'APAC', 'EMEA', 'Americas')
+  - segment (e.g., 'institutional', 'corporate', 'retail')
+
+  For client names, contact details, or AUM data, you need to:
+  1. Contact the Sales/CRM team — they manage the distribution list
+  2. Use the firm's CRM system (Salesforce) for contact details
+  3. If you need client data for analytical purposes, request
+     compliance approval through the data governance portal
+
+  I CANNOT run a query that exposes client PII, even with your
+  read-only credentials. This is a firm policy, not a technical
+  limitation — the columns exist in the database but the skill is
+  configured to redact them.
+
+  WHAT I CAN DO: If you need aggregate client metrics for research
+  purposes (e.g., "how many institutional clients are in APAC?"),
+  I can query that without exposing individual records:
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  SELECT                                                  │
+  │    region,                                               │
+  │    segment,                                              │
+  │    COUNT(*) AS client_count                              │
+  │  FROM clients.accounts                                   │
+  │  WHERE is_active = TRUE                                  │
+  │    AND is_deleted = FALSE                                │
+  │  GROUP BY region, segment                                │
+  │  ORDER BY region, segment;                               │
+  └─────────────────────────────────────────────────────────┘
+
+  Would this help, or do you need the full contact list from Sales?
+
+
+--- An analyst asks a question that requires business logic ---
+
+Analyst: /agdb-query-assistant-skill What's our soybean crush margin right now? And how does it compare to the 5-year average for this time of year?
+
+Copilot (loading agdb-query-assistant-skill):
+
+  Crush margin is a CALCULATED value, not stored directly. It requires
+  the firm's specific formula (from the schema docs, section 14.3):
+
+  Board Crush Margin ($/bu) =
+    (Soybean Meal price × 0.022) + (Soybean Oil price × 11.0)
+    - Soybean price
+
+  Where:
+  - Soybean price: $/bu from market.settlement_prices (CBOT S 1)
+  - Soybean Meal price: $/short ton from market.settlement_prices (CBOT SM 1)
+  - Soybean Oil price: ¢/lb from market.settlement_prices (CBOT BO 1)
+  - The 0.022 converts $/short ton to $/bu for meal (yield: 44 lbs
+    meal per bushel, 1 short ton = 2000 lbs, so 1 bu → 0.022 tons)
+  - The 11.0 converts ¢/lb to $/bu for oil (yield: 11 lbs oil per
+    bushel, price in cents → 11 lbs × price / 100)
+
+  ⚠️ IMPORTANT: The prices in our database are stored in DIFFERENT
+  units per commodity:
+  - Soybeans: cents/bu → divide by 100 for $/bu
+  - Meal: dollars/short ton (already in $)
+  - Oil: cents/lb → used directly in the formula (the 11.0 factor
+    handles the conversion)
+
+  ┌─────────────────────────────────────────────────────────┐
+  │  WITH latest AS (                                        │
+  │    SELECT                                                │
+  │      MAX(price_date) AS pd                               │
+  │    FROM market.settlement_prices                         │
+  │    WHERE price_date <= CURRENT_DATE                      │
+  │  ),                                                      │
+  │  prices AS (                                             │
+  │    SELECT                                                │
+  │      i.instrument_code,                                  │
+  │      s.settlement_price,                                 │
+  │      s.price_date                                        │
+  │    FROM market.settlement_prices s                       │
+  │    JOIN reference.instruments i                          │
+  │      ON s.instrument_id = i.instrument_id                │
+  │    CROSS JOIN latest l                                   │
+  │    WHERE s.price_date = l.pd                             │
+  │      AND i.instrument_code IN ('S_1', 'SM_1', 'BO_1')   │
+  │  ),                                                      │
+  │  margin AS (                                             │
+  │    SELECT                                                │
+  │      p_s.price_date,                                     │
+  │      ROUND(p_s.settlement_price / 100.0, 4) AS soy_usd, │
+  │      ROUND(p_sm.settlement_price, 2) AS meal_usd_ton,   │
+  │      ROUND(p_bo.settlement_price, 4) AS oil_cents_lb,   │
+  │      ROUND(                                              │
+  │        (p_sm.settlement_price * 0.022)                   │
+  │        + (p_bo.settlement_price * 11.0 / 100.0)         │
+  │        - (p_s.settlement_price / 100.0)                  │
+  │      , 4) AS crush_margin_usd                            │
+  │    FROM prices p_s                                       │
+  │    JOIN prices p_sm ON p_sm.instrument_code = 'SM_1'     │
+  │    JOIN prices p_bo ON p_bo.instrument_code = 'BO_1'     │
+  │    WHERE p_s.instrument_code = 'S_1'                     │
+  │  )                                                       │
+  │  SELECT * FROM margin;                                   │
+  └─────────────────────────────────────────────────────────┘
+
+  PLAIN ENGLISH: "Get yesterday's settlement prices for soybeans,
+  soybean meal, and soybean oil. Calculate the board crush margin
+  using the firm's standard formula. Convert all prices to consistent
+  units (dollars per bushel for the final margin)."
+
+  Run this query? [Yes / Modify / Cancel]
+
+Analyst: Yes, and also the 5-year average
+
+Copilot:
+
+  Running current margin query... (0.2 seconds)
+  Running 5-year seasonal average... (1.4 seconds)
+
+  SOYBEAN CRUSH MARGIN — March 3, 2026
+
+  CURRENT:
+  | Component     | Price             | Contribution  |
+  |---------------|-------------------|---------------|
+  | Soybeans (S1) | $10.9450/bu       | -$10.9450     |
+  | Meal (SM1)    | $312.40/short ton | +$6.8728      |
+  | Oil (BO1)     | 45.82¢/lb         | +$5.0402      |
+  | CRUSH MARGIN  |                   | +$0.9680/bu   |
+
+  5-YEAR SEASONAL COMPARISON (same calendar week):
+  | Year | Crush Margin ($/bu) | Notes                          |
+  |------|---------------------|--------------------------------|
+  | 2022 | $2.1240             | Post-COVID demand boom         |
+  | 2023 | $1.5680             | Still elevated                 |
+  | 2024 | $1.0420             | Normalizing                    |
+  | 2025 | $0.8860             | Below average                  |
+  | 2026 | $0.9680             | Current                        |
+  | 5yr Avg | $1.3176          |                                |
+
+  ASSESSMENT:
+  Current crush margin of $0.97/bu is 27% BELOW the 5-year average
+  of $1.32/bu for early March. The margin has been below average since
+  mid-2024, driven by weak soybean oil demand (RD mandate uncertainty)
+  and adequate meal supplies.
+
+  For context: crush margins below $0.80/bu are considered "crush
+  discouraging" — processors start reducing run rates. At $0.97 we're
+  above that threshold but not by much. If margins compress further,
+  expect crush pace to slow in Q2, which is bullish for meal and
+  bearish for bean oil.
+
+  This is the kind of answer that would have taken the data team
+  2 days to produce. The business logic (the crush formula, the unit
+  conversions, the seasonal comparison) is encoded in the skill. You
+  asked in plain English and got the answer in 3 seconds.
+
+
+=============================================================
+WHY THIS SKILL WORKS
+=============================================================
+
+The internal database skill solves three problems simultaneously:
+
+  1. THE BOTTLENECK PROBLEM
+  Every firm has 2-3 people who know the database well. They're the
+  bottleneck for every analyst's data request. When the senior data
+  engineer goes on vacation, the whole team slows down. The skill
+  distributes database knowledge to everyone with read access.
+
+  WITHOUT THE SKILL:
+  - Analyst sends Slack message to data team: "Can you pull...?"
+  - Data team triages: 1-3 day wait (they have 40 requests in queue)
+  - Data team delivers: sometimes wrong interpretation
+  - Analyst requests revision: another 1-2 days
+  - Total: 2-5 business days for one data pull
+
+  WITH THE SKILL:
+  - Analyst asks in plain English: 10 seconds
+  - Skill generates, explains, and runs query: 30 seconds
+  - If wrong interpretation, analyst asks again: 30 seconds
+  - Total: under 2 minutes
+
+  2. THE ONBOARDING PROBLEM
+  A new hire with read-only database access but no SQL knowledge is
+  essentially locked out of the firm's most valuable asset — 15 years
+  of proprietary data. The skill turns the 142-page schema document
+  into an interactive guide. The new analyst from the simulation was
+  productive on DAY ONE, pulling balance sheets and understanding
+  table relationships without a 3-week SQL training course.
+
+  3. THE INSTITUTIONAL KNOWLEDGE PROBLEM
+  The business logic (crush margin formula, fiscal year convention,
+  crop year definitions, price unit conversions) exists in three
+  places: the schema docs (which nobody reads), senior analysts' heads
+  (which leave when they do), and the data team's query history (which
+  nobody outside the team can access). The skill codifies ALL of this
+  into reusable, version-controlled reference files. When the firm
+  changes its fiscal year convention, you update one JSON file.
+
+  SAFETY IS THE FEATURE, NOT THE CONSTRAINT:
+  The skill's guardrails (read-only validation, client data redaction,
+  query explanation before execution, audit logging) aren't limitations
+  — they're what make it trustworthy enough to give to non-technical
+  analysts. The data team WANTS analysts to self-serve, but they don't
+  want someone accidentally running SELECT * on a 500M-row table or
+  pulling client PII into an email attachment. The skill makes self-
+  service safe.
