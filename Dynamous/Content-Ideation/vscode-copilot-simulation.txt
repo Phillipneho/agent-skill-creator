@@ -2776,7 +2776,11 @@ FINAL TEAM SKILL LIBRARY — FULL DATA PIPELINE STACK
     # Vessel tracking
     export AIS_API_KEY="your-ais-subscription-key"
 
-  16 skills. 8 data sources. One team.
+  WORKFLOW SKILLS (process automation):
+  publication-compliance-skill    Internal style/legal/citation rules  Pre-submission compliance check
+  email-thread-intel-skill        Email threads (.eml/.msg/raw text)   Intent extraction & action items
+
+  18 skills. 8 data sources. One team.
 
   The junior analyst who joined last month can type:
     /noaa-crop-monitor-skill Morning scan
@@ -2789,3 +2793,1029 @@ FINAL TEAM SKILL LIBRARY — FULL DATA PIPELINE STACK
   If someone joins, they're productive on day one.
 
   That's what a skill library looks like when a team takes it seriously.
+
+
+=============================================================
+SKILL 16: Corporate Publication Compliance Checker
+=============================================================
+
+An agriculture commodity research analyst at a large bank or trading
+house doesn't just write analysis — they publish it. Every client-facing
+report must conform to corporate style guidelines, regulatory
+disclosures, data citation standards, and compliance language. Getting
+flagged by the compliance department delays publication by 2-3 days
+and embarrasses the analyst. This skill catches problems before
+submission.
+
+User: /agent-skill-creator I'm a senior ag commodity analyst at a global bank. Every research note, weekly report, and market commentary I publish has to pass through our compliance and editorial review. The problem is I keep getting sent back for the same issues: missing disclaimers, inconsistent date formats, using "will" instead of "may" (forward-looking language compliance), citing data without proper attribution, inconsistent units (switching between bushels and metric tonnes without converting), and not following our house style guide. I waste 2-3 hours per report fixing these things AFTER compliance flags them. I want a skill that acts as a pre-submission compliance checker. I give it my draft and it tells me every issue before I send it to compliance. Here are our internal documents: references/house-style-guide.pdf (our editorial standards), references/compliance-language-rules.pdf (regulated language requirements from Legal), references/data-citation-policy.md (how to cite USDA, Bloomberg, exchange data), and references/report-templates/ (approved report templates for different publication types). This has to work for: weekly crop reports, flash market commentaries, quarterly outlook pieces, and client presentation decks.
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/house-style-guide.pdf...
+  Reading references/compliance-language-rules.pdf...
+  Reading references/data-citation-policy.md...
+  Scanning references/report-templates/ (4 templates found)...
+
+  This is a rule-based document validation skill. The challenge isn't
+  AI creativity — it's codifying dozens of specific, non-negotiable
+  rules from your internal documents and checking them exhaustively.
+  Every rule needs to be traceable back to a source document so the
+  analyst trusts the feedback. Let me build this.
+
+  Implicit requirements from your documents:
+
+  COMPLIANCE LANGUAGE RULES (from Legal):
+  - Forward-looking statements must use hedging language: "may",
+    "could", "we expect", "is likely to" — NEVER "will", "shall",
+    "is going to" when discussing future prices or production
+  - Every report must include the standard disclaimer block (provided
+    in compliance-language-rules.pdf, 3 variants: short/medium/full)
+  - Short disclaimer for flash commentaries (< 500 words)
+  - Medium disclaimer for weekly reports
+  - Full disclaimer for quarterly outlooks and client presentations
+  - Conflict of interest disclosure: if the bank has a trading position
+    in the commodity discussed, a specific sentence must appear
+  - "Not investment advice" language required in all external-facing
+    publications
+  - No price targets without the qualifier "our estimate" or "our model
+    suggests" — regulatory requirement for non-broker-dealer entities
+  - Analyst certification statement ("I, [name], certify that the views
+    expressed in this report accurately reflect my personal views...")
+    required for all quarterly publications
+
+  HOUSE STYLE GUIDE:
+  - Date format: "March 4, 2026" in body text. Never "3/4/2026" or
+    "04/03/2026" (ambiguous US/EU). Tables may use "Mar-26" shorthand
+  - Numbers: spell out one through nine, use numerals for 10+. Exception:
+    all numbers in data tables, all units ("5 MMT" not "five MMT")
+  - Units: metric tonnes (MT) is the house standard. If bushels are used
+    (for US-centric analysis), must include MT conversion in parentheses.
+    E.g., "52 bu/ac (3.5 MT/ha)" — never bushels without conversion
+  - Abbreviations: define on first use. "The U.S. Department of
+    Agriculture (USDA) released..." then "USDA" thereafter
+  - Report title format: "[COMMODITY] [TYPE] — [Date]"
+    E.g., "SOYBEANS WEEKLY — March 4, 2026"
+  - Section headers: ALL CAPS, no period. ("SUPPLY AND DEMAND" not
+    "Supply and demand.")
+  - Data freshness: every data point must include its reference date.
+    "Soybean exports reached 5.2 MMT (USDA, as of Feb 28)" — never
+    cite data without indicating when it was current
+  - Bloomberg data: cite as "Source: Bloomberg" with the ticker in
+    parentheses. E.g., "CBOT soybeans closed at $11.42/bu (S 1, Source:
+    Bloomberg)"
+  - USDA data: cite the specific report. "Source: USDA WASDE, February
+    2026" not just "Source: USDA"
+  - Exchange data: cite exchange name. "ICE Arabica (KC 1)" not just
+    "coffee futures"
+  - Rounding: prices to 2 decimal places, volumes to 1 decimal (MMT)
+    or whole numbers (MT), yields to 1 decimal (bu/ac or MT/ha)
+  - "Bearish" and "bullish" must be qualified: "bearish for nearby
+    futures" or "bullish for the 2026/27 outlook" — never standalone
+    "this is bullish"
+
+  DATA CITATION POLICY:
+  - Every chart, table, and key data point needs a source line
+  - Proprietary model outputs must be labeled: "Source: [Bank Name]
+    Estimates" or "Source: [Bank Name] Model"
+  - Third-party data cannot be republished in full — only excerpts with
+    proper attribution (Bloomberg redistribution terms)
+  - CFTC COT data: "Source: CFTC Commitments of Traders, as of [date]"
+  - Client-shared data: if a client provided proprietary data, it must
+    NOT appear in any published report without explicit permission
+
+  TEMPLATE CONFORMANCE:
+  - Each report type has an approved structure (section order, required
+    sections, optional sections)
+  - Weekly crop report template: Title → Executive Summary → Price
+    Action → Weather → Crop Conditions → Supply & Demand → Trade →
+    Outlook → Disclaimer
+  - Flash commentary template: Title → Key Point (1-2 sentences) →
+    Analysis (3-5 paragraphs) → Implication → Short Disclaimer
+  - Quarterly outlook: Title → Executive Summary → Macro Context →
+    Detailed S&D → Regional Breakdown → Price Forecast → Risk Factors
+    → Analyst Certification → Full Disclaimer
+  - Missing a required section = compliance rejection
+
+  Building...
+
+  publication-compliance-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── compliance_checker.py     # Main orchestrator: load draft,
+  │   │                             #   run all rule engines, output report
+  │   ├── language_rules.py         # Forward-looking language scanner,
+  │   │                             #   prohibited phrases, hedging checker
+  │   ├── disclaimer_checker.py     # Verify correct disclaimer variant
+  │   │                             #   is present and matches report type
+  │   ├── style_checker.py          # Date formats, number formatting,
+  │   │                             #   abbreviation first-use, unit rules
+  │   ├── citation_checker.py       # Data source attribution validation,
+  │   │                             #   date freshness, Bloomberg/USDA/CFTC
+  │   ├── template_checker.py       # Section order/presence vs template,
+  │   │                             #   title format, header style
+  │   ├── unit_converter.py         # Detect bare bushel/MT values, suggest
+  │   │                             #   dual-unit format
+  │   └── report_builder.py         # Compliance Pre-Check Report (PDF)
+  ├── references/
+  │   ├── house-style-rules.md      # Parsed style guide rules (machine-
+  │   │                             #   readable checklist format)
+  │   ├── compliance-phrases.md     # Prohibited/required phrases + context
+  │   ├── disclaimer-templates.md   # Short/medium/full disclaimer text
+  │   ├── citation-formats.md       # Correct citation format by source
+  │   ├── report-templates.md       # Section structure by report type
+  │   └── methodology.md
+  ├── assets/
+  │   ├── prohibited_phrases.json   # "will rise", "shall increase", etc.
+  │   ├── hedging_phrases.json      # "may", "could", "we expect", etc.
+  │   ├── abbreviation_registry.json # Known abbreviations and expansions
+  │   ├── unit_conversions.json     # bu/ac↔MT/ha, bu↔MT by commodity
+  │   ├── citation_patterns.json    # Regex patterns for valid citations
+  │   └── templates/
+  │       ├── weekly_crop.json      # Required/optional sections + order
+  │       ├── flash_commentary.json
+  │       ├── quarterly_outlook.json
+  │       └── client_presentation.json
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (no external credentials needed — all rules are local)
+  Installed at: ~/.claude/skills/publication-compliance-skill
+
+  Shared to: github.com/acme-trading/publication-compliance-skill
+
+
+--- The analyst runs a pre-submission check on a weekly report ---
+
+Analyst: /publication-compliance-skill Check this draft before I send it to compliance: drafts/soybeans-weekly-2026-03-04.md
+
+Copilot (loading publication-compliance-skill):
+
+  Loading draft: drafts/soybeans-weekly-2026-03-04.md
+  Detected report type: Weekly Crop Report (from title format)
+  Running all compliance checks...
+
+  PUBLICATION COMPLIANCE PRE-CHECK
+  Report: SOYBEANS WEEKLY — March 4, 2026
+  Type: Weekly Crop Report
+  Word count: 2,847
+
+  ════════════════════════════════════════════════════════
+  CRITICAL ISSUES (must fix before submission — compliance will reject)
+  ════════════════════════════════════════════════════════
+
+  1. FORWARD-LOOKING LANGUAGE VIOLATION [Line 34]
+     Found: "Brazilian exports will exceed 90 MMT this season"
+     Rule: Never use "will" for future market/production outcomes
+     Fix:  "Brazilian exports are expected to exceed 90 MMT..."
+     Source: compliance-language-rules.pdf §3.2
+
+  2. FORWARD-LOOKING LANGUAGE VIOLATION [Line 67]
+     Found: "Prices are going to test $10.50 support"
+     Rule: "going to" implies certainty about future prices
+     Fix:  "Prices may test $10.50 support" or "Prices could test..."
+     Source: compliance-language-rules.pdf §3.2
+
+  3. MISSING DISCLAIMER [End of document]
+     Found: No disclaimer block detected
+     Rule: Weekly reports require the MEDIUM disclaimer variant (¶2-4
+           of the standard disclaimer, including non-investment-advice
+           language and data redistribution notice)
+     Fix:  Append the medium disclaimer from templates/disclaimers.md
+     Source: compliance-language-rules.pdf §1.1
+
+  4. UNQUALIFIED PRICE TARGET [Line 89]
+     Found: "Fair value for Nov soybeans is $11.20"
+     Rule: Price targets must include attribution qualifier
+     Fix:  "Our model suggests fair value for Nov soybeans near $11.20"
+     Source: compliance-language-rules.pdf §4.1
+
+  5. BARE DATA WITHOUT SOURCE [Line 52]
+     Found: "China imported 8.4 MMT of soybeans in February"
+     Rule: All data points require source and reference date
+     Fix:  "China imported 8.4 MMT of soybeans in February (Source:
+           China Customs, as of Mar 1, 2026)"
+     Source: data-citation-policy.md §2.1
+
+  ════════════════════════════════════════════════════════
+  STYLE ISSUES (should fix — editor will flag)
+  ════════════════════════════════════════════════════════
+
+  6. DATE FORMAT [Line 12]
+     Found: "3/4/2026"
+     Rule: Body text requires "March 4, 2026" (never numeric M/D/Y)
+     Fix:  "March 4, 2026"
+     Source: house-style-guide.pdf §7.1
+
+  7. DATE FORMAT [Line 78]
+     Found: "Feb 28th"
+     Rule: No ordinal suffixes on dates ("st", "nd", "rd", "th")
+     Fix:  "Feb 28" (table) or "February 28" (body text)
+     Source: house-style-guide.pdf §7.1
+
+  8. UNIT CONSISTENCY [Line 23]
+     Found: "US yield of 52 bu/ac"
+     Rule: Bushels require metric conversion in parentheses
+     Fix:  "US yield of 52 bu/ac (3.5 MT/ha)"
+     Source: house-style-guide.pdf §8.3
+
+  9. UNIT CONSISTENCY [Lines 41, 56, 71]
+     Found: Three more bare bushel references without MT conversion
+     Fix:  Add "(X.X MT/ha)" or "(X.X MT)" after each bushel figure
+     Source: house-style-guide.pdf §8.3
+
+  10. ABBREVIATION FIRST USE [Line 8]
+      Found: "CONAB reported..." (first occurrence)
+      Rule: Abbreviations must be defined on first use
+      Fix:  "Brazil's National Supply Company (CONAB) reported..."
+      Source: house-style-guide.pdf §6.2
+
+  11. ABBREVIATION FIRST USE [Line 15]
+      Found: "ABIOVE estimates..." (first occurrence)
+      Fix:  "The Brazilian Vegetable Oil Industry Association (ABIOVE)
+            estimates..."
+      Source: house-style-guide.pdf §6.2
+
+  12. STANDALONE SENTIMENT [Line 92]
+      Found: "This is bearish."
+      Rule: Bearish/bullish must be qualified with timeframe and scope
+      Fix:  "This is bearish for nearby CBOT soybean futures" or
+            "...bearish for the 2025/26 US export outlook"
+      Source: house-style-guide.pdf §11.1
+
+  13. NUMBER FORMATTING [Line 44]
+      Found: "production fell by 3 MMT"
+      Rule: Spell out one–nine; BUT exception for units — numerals OK.
+            Actually this IS correct (3 MMT uses numeral with unit).
+      Status: FALSE POSITIVE — no action needed.
+
+  ════════════════════════════════════════════════════════
+  CITATION ISSUES (fix for data integrity)
+  ════════════════════════════════════════════════════════
+
+  14. VAGUE USDA CITATION [Line 29]
+      Found: "Source: USDA"
+      Rule: Must specify which USDA report
+      Fix:  "Source: USDA WASDE, February 2026" or "Source: USDA FAS
+            PSD, February 2026"
+      Source: data-citation-policy.md §3.1
+
+  15. MISSING BLOOMBERG TICKER [Line 61]
+      Found: "Source: Bloomberg"
+      Rule: Bloomberg citations require the terminal ticker
+      Fix:  "Source: Bloomberg (S 1 Comdty)"
+      Source: data-citation-policy.md §3.3
+
+  16. STALE DATA REFERENCE [Line 47]
+      Found: "USDA projects 2025/26 exports at 1,825 million bushels"
+      Note: This is from the FEBRUARY WASDE. The March WASDE was
+            published yesterday (March 3). You should either update to
+            the March figure or add "(February estimate, prior to
+            March revision)"
+      Source: data-citation-policy.md §4.1
+
+  ════════════════════════════════════════════════════════
+  TEMPLATE CHECK
+  ════════════════════════════════════════════════════════
+
+  Weekly Crop Report — Required sections:
+  ✓ Title (correct format: "SOYBEANS WEEKLY — March 4, 2026")
+  ✓ Executive Summary
+  ✓ Price Action
+  ✓ Weather
+  ✓ Crop Conditions
+  ✓ Supply & Demand
+  ✓ Trade
+  ✗ Outlook (MISSING — required section)
+  ✗ Disclaimer (MISSING — see Critical Issue #3)
+
+  Section header format:
+  ✓ "PRICE ACTION" — correct (ALL CAPS, no period)
+  ✓ "WEATHER" — correct
+  ✗ "Crop Conditions" [Line 38] — should be "CROP CONDITIONS"
+  ✗ "Supply and Demand." [Line 50] — remove period, use ALL CAPS:
+    "SUPPLY AND DEMAND"
+
+  ════════════════════════════════════════════════════════
+  SUMMARY
+  ════════════════════════════════════════════════════════
+
+  Critical (compliance will reject): 5 issues
+  Style (editor will flag):          6 issues (1 false positive)
+  Citation:                          3 issues
+  Template:                          2 missing sections, 2 header fixes
+  ──────────────────────────────────────────────────────
+  TOTAL:                             16 issues (15 real, 1 false positive)
+
+  ESTIMATED TIME TO FIX: 15-20 minutes
+
+  Without this check, compliance would have returned the draft in 2-3
+  business days with the same findings. Now you can fix everything in
+  one pass, resubmit clean, and publish on schedule.
+
+  Pre-check report: reports/compliance-check-soybeans-weekly-2026-03-04.pdf
+
+
+--- The analyst fixes everything and re-runs ---
+
+Analyst: /publication-compliance-skill Re-check the updated draft: drafts/soybeans-weekly-2026-03-04-v2.md
+
+Copilot (loading publication-compliance-skill):
+
+  Loading draft: drafts/soybeans-weekly-2026-03-04-v2.md
+  Running all compliance checks...
+
+  PUBLICATION COMPLIANCE PRE-CHECK
+  Report: SOYBEANS WEEKLY — March 4, 2026
+  Type: Weekly Crop Report (v2)
+  Word count: 3,012
+
+  ✓ Forward-looking language: PASSED (0 violations)
+  ✓ Disclaimer: PASSED (medium variant detected, text matches template)
+  ✓ Price targets: PASSED (all qualified with "our model suggests")
+  ✓ Data citations: PASSED (all sources include report name and date)
+  ✓ Date formats: PASSED (all "Month DD, YYYY" format)
+  ✓ Unit consistency: PASSED (all bushel figures include MT conversion)
+  ✓ Abbreviations: PASSED (all defined on first use)
+  ✓ Sentiment qualifiers: PASSED ("bearish for nearby CBOT futures")
+  ✓ Bloomberg tickers: PASSED (all citations include ticker)
+  ✓ Template structure: PASSED (all 9 required sections present, correct order)
+  ✓ Section headers: PASSED (all ALL CAPS, no periods)
+  ✓ Data freshness: PASSED (updated to March WASDE figures)
+
+  RESULT: CLEAN — Ready for compliance submission.
+
+  0 critical issues. 0 style issues. 0 citation issues.
+  This draft should pass compliance review on first submission.
+
+
+--- A flash commentary during a volatile session ---
+
+Analyst: /publication-compliance-skill Quick check on this flash note I wrote during the session: drafts/flash-argentina-drought-2026-03-05.md
+
+Copilot (loading publication-compliance-skill):
+
+  Loading draft: drafts/flash-argentina-drought-2026-03-05.md
+  Detected report type: Flash Commentary (from title + word count: 380)
+  Running compliance checks...
+
+  PUBLICATION COMPLIANCE PRE-CHECK
+  Report: SOYBEANS FLASH — Argentina Drought Deepens, March 5, 2026
+  Type: Flash Commentary
+  Word count: 380
+
+  CRITICAL:
+  1. DISCLAIMER VARIANT MISMATCH [End of document]
+     Found: Medium disclaimer (312 words)
+     Rule: Flash commentaries (< 500 words) use the SHORT disclaimer
+           (87 words). Using the medium variant makes the disclaimer
+           almost as long as the analysis itself.
+     Fix:  Replace with short disclaimer from templates/disclaimers.md
+     Source: compliance-language-rules.pdf §1.1
+
+  STYLE:
+  2. FORWARD-LOOKING LANGUAGE [Line 8]
+     Found: "production will fall to 38-42 MMT"
+     Fix:  "production could fall to 38-42 MMT"
+
+  3. MISSING SOURCE DATE [Line 5]
+     Found: "Buenos Aires Grain Exchange estimates"
+     Fix:  "Buenos Aires Grain Exchange estimates (as of Mar 4, 2026)"
+
+  TEMPLATE:
+  ✓ Title format: correct
+  ✓ Key Point section: present
+  ✓ Analysis section: present
+  ✓ Implication section: present
+  ✗ Disclaimer: present but wrong variant (see Critical #1)
+
+  SUMMARY: 1 critical, 2 style, 0 citation. Fix in 5 minutes.
+
+  The disclaimer swap is the one that matters. Compliance WILL reject
+  a flash note with a medium disclaimer — it looks like you copy-pasted
+  from a weekly template without adjusting.
+
+
+--- Quarterly outlook — the most scrutinized report type ---
+
+Analyst: /publication-compliance-skill Full audit on the Q2 outlook before it goes to the MD for sign-off: drafts/soybeans-q2-outlook-2026.md
+
+Copilot (loading publication-compliance-skill):
+
+  Loading draft: drafts/soybeans-q2-outlook-2026.md
+  Detected report type: Quarterly Outlook (from title + template match)
+  Running compliance checks (FULL AUDIT mode for quarterly)...
+
+  PUBLICATION COMPLIANCE FULL AUDIT
+  Report: SOYBEANS QUARTERLY OUTLOOK — Q2 2026
+  Type: Quarterly Outlook
+  Word count: 8,420
+
+  This report type receives the highest compliance scrutiny. Quarterly
+  outlooks are distributed to institutional clients and may be cited in
+  media. Running all checks at maximum sensitivity.
+
+  ════════════════════════════════════════════════════════
+  CRITICAL ISSUES
+  ════════════════════════════════════════════════════════
+
+  1. MISSING ANALYST CERTIFICATION [End of document]
+     Rule: Quarterly outlooks require the analyst certification
+           statement: "I, [Name], certify that the views expressed in
+           this report accurately reflect my personal views and that no
+           part of my compensation was, is, or will be related to the
+           specific recommendations or views expressed herein."
+     Fix:  Add certification between Risk Factors and Full Disclaimer
+     Source: compliance-language-rules.pdf §6.1
+
+  2. FORWARD-LOOKING LANGUAGE (3 instances) [Lines 112, 245, 389]
+     "Prices will recover..." → "Prices may recover..."
+     "China will import..." → "China is expected to import..."
+     "The trade war will escalate..." → "The trade war could escalate..."
+
+  3. PROPRIETARY MODEL OUTPUT WITHOUT LABEL [Line 201]
+     Found: Table with "Price Forecast" column showing $10.80, $11.40,
+            $12.10 for Q2, Q3, Q4
+     Rule: Proprietary model outputs must be labeled "Source: [Bank]
+           Estimates" or "Source: [Bank] Quantitative Model"
+     Fix:  Add source line under table: "Source: [Bank Name] Quantitative
+           Commodity Model. Forecasts are subject to revision."
+
+  ════════════════════════════════════════════════════════
+  STYLE ISSUES
+  ════════════════════════════════════════════════════════
+
+  4. UNIT CONSISTENCY [8 instances]
+     Found 8 bushel-only figures missing metric conversions.
+     Quarterly outlooks have international readership — metric
+     conversions are especially important.
+     [Line 45] "51.5 bu/ac" → "51.5 bu/ac (3.46 MT/ha)"
+     [Line 78] "1,825 M bu" → "1,825 million bushels (49.7 MMT)"
+     ... (6 more, see full report)
+
+  5. ROUNDING [Lines 156, 203]
+     Found: "exports at 5.23456 MMT"
+     Rule: Volumes round to 1 decimal place for MMT
+     Fix:  "exports at 5.2 MMT"
+
+  ════════════════════════════════════════════════════════
+  CITATION ISSUES
+  ════════════════════════════════════════════════════════
+
+  6. STALE DATA (WASDE) [Lines 67, 89, 134]
+     Your draft cites "USDA WASDE, February 2026" in three places.
+     The March WASDE has been published. For a quarterly outlook going
+     to print in March, all WASDE references should be March 2026
+     unless you're specifically discussing the February-to-March
+     revision.
+
+  7. THIRD-PARTY DATA REDISTRIBUTION [Line 290]
+     Found: Full reproduction of a Bloomberg table (12 rows of daily
+            CBOT settlement prices)
+     Rule: Bloomberg data redistribution terms limit verbatim
+           reproduction. Summarize, chart, or excerpt — don't reproduce
+           full daily settlement tables.
+     Fix:  Replace with a summary ("CBOT soybeans traded in a $10.20-
+           $11.60 range during Q1") or a chart, with "Source: Bloomberg"
+
+  ════════════════════════════════════════════════════════
+  TEMPLATE CHECK
+  ════════════════════════════════════════════════════════
+
+  Quarterly Outlook — Required sections:
+  ✓ Title
+  ✓ Executive Summary
+  ✓ Macro Context
+  ✓ Detailed S&D
+  ✓ Regional Breakdown
+  ✓ Price Forecast
+  ✓ Risk Factors
+  ✗ Analyst Certification (MISSING — see Critical #1)
+  ✓ Full Disclaimer (correct variant, text matches)
+
+  Section order: CORRECT (all sections in approved sequence)
+
+  ════════════════════════════════════════════════════════
+  SUMMARY
+  ════════════════════════════════════════════════════════
+
+  Critical:  3 issues (certification, language, model label)
+  Style:     9 issues (8 unit conversions, 1 rounding)
+  Citation:  2 issues (stale WASDE, Bloomberg redistribution)
+  Template:  1 missing section
+  ──────────────────────────────────────────────────────
+  TOTAL:     15 issues
+
+  ESTIMATED TIME TO FIX: 30-40 minutes
+
+  The Bloomberg redistribution flag is the one that could cause
+  real problems. Legal has flagged analysts before for reproducing
+  terminal data verbatim. Summarize or chart it — don't copy the table.
+
+  The analyst certification is a simple paste, but forgetting it on a
+  quarterly that goes to 200+ institutional clients would be a career
+  embarrassment. This is exactly why you run the checker first.
+
+  Full audit report: reports/compliance-audit-soy-q2-outlook-2026.pdf
+
+
+=============================================================
+WHY THIS SKILL WORKS
+=============================================================
+
+The publication compliance skill is probably the highest-ROI skill in
+the entire library. Consider:
+
+  WITHOUT THE SKILL:
+  - Analyst writes report: 3-4 hours
+  - Submits to compliance: 1 day turnaround (best case)
+  - Gets 10-15 issues back: 1-2 hours to fix
+  - Resubmits: another 1 day turnaround
+  - Gets 2-3 more issues: 30 min to fix
+  - Final approval: maybe day 4 after writing
+  - Total: 5-7 hours of analyst time + 2-4 days of calendar time
+
+  WITH THE SKILL:
+  - Analyst writes report: 3-4 hours
+  - Runs /publication-compliance-skill: 30 seconds
+  - Fixes all 15 issues in one pass: 20-40 minutes
+  - Submits clean draft to compliance: passes first time
+  - Total: 4-5 hours of analyst time + 1 day of calendar time
+
+  SAVINGS: 2-3 hours per report × 4 reports/month = 8-12 hours/month
+  per analyst. For a team of 6 analysts, that's 50-70 hours/month of
+  senior analyst time recovered.
+
+  But the real value isn't the hours — it's the publication speed.
+  A weekly crop report that publishes Monday morning instead of
+  Wednesday afternoon is infinitely more valuable to clients who trade
+  on it. Timeliness IS the product in commodity research.
+
+The skill also serves as institutional knowledge preservation. When the
+head of compliance retires, the rules don't disappear — they're codified
+in the skill's reference files. When a new regulation changes the
+disclaimer language, you update one JSON file and every analyst's next
+check reflects the change automatically.
+
+This is the kind of skill that doesn't seem exciting — no satellite
+data, no vessel tracking, no yield models. But it's the one the team
+uses every single day, and it's the one the managing director notices
+because reports stop getting bounced back.
+
+
+=============================================================
+SKILL 17: Email Thread Intelligence — Intent & Requirements Extractor
+=============================================================
+
+Every analyst, PM, and researcher has lived this nightmare: a 47-message
+email thread spanning 3 weeks, 9 participants, 4 conflicting opinions,
+2 scope changes buried in reply #31, and one critical deadline mentioned
+once in a forwarded attachment. Someone asks "what did we actually agree
+to?" and nobody can answer without re-reading the entire chain. This
+skill reads the mess and tells you what's real.
+
+User: /agent-skill-creator I spend at least an hour a day trying to parse long email threads from clients, internal stakeholders, and cross-functional teams. The problem isn't individual emails — it's threads that mutate over time. A client starts by asking for one thing, then someone on our side proposes an alternative, then the client's boss jumps in and changes the scope, then there are 15 replies about scheduling that bury the actual decision, and by reply #40 nobody remembers what was originally asked. I need a skill that I can paste an email thread into (or point at a .eml/.msg file) and get back: (1) the ACTUAL requirements — not what was first asked, but what was LAST agreed to, tracking how requirements evolved through the thread, (2) all action items with owners and deadlines, (3) open questions that were asked but never answered, (4) decisions that were made (and WHO made them — authority matters), (5) scope changes — what was added, removed, or modified from the original request, and (6) conflicting statements where two people said incompatible things and nobody resolved it. I work in commodity research but this is a universal problem — every knowledge worker has it. Here's an example of the kind of thread I deal with: references/sample-client-thread.eml (62 messages, 12 participants, 3 weeks).
+
+Copilot (loading agent-skill-creator skill):
+
+  Reading references/sample-client-thread.eml...
+
+  62 messages. 12 participants. 21 days. This is a textbook case of
+  requirements drift buried in conversational noise. The core challenge
+  is distinguishing signal from noise: most messages are scheduling,
+  acknowledgments, CC additions, and side conversations. The real
+  decisions are in maybe 8-10 messages. Let me build a skill that
+  finds them.
+
+  Implicit requirements:
+  - Input formats: raw pasted text, .eml files (RFC 5322), .msg files
+    (Outlook), or a batch of .eml files for multi-thread analysis
+  - Thread reconstruction: emails arrive out of order, have inconsistent
+    quoting styles (>, |, inline), forwarded sub-threads, and sometimes
+    broken In-Reply-To headers. Need to rebuild the conversation tree
+  - Participant identification: same person may appear as "John Smith",
+    "John", "JS", "john.smith@acme.com", and "Smith, John (London)".
+    Need entity resolution across the thread
+  - Authority detection: not all participants are equal. A director
+    saying "let's do X" overrides an analyst suggesting "maybe Y".
+    Detect seniority signals from: email signatures (titles), CC vs TO
+    position, who others defer to, explicit authority statements ("I've
+    approved this")
+  - Temporal tracking: requirements stated in message #5 may be
+    superseded by message #28. The skill must track the EVOLUTION,
+    not just extract from the latest message
+  - Implicit vs explicit: "sounds good" in reply to a proposal = implicit
+    agreement. "Per our call, we agreed to..." = explicit decision.
+    Both matter but carry different confidence levels
+  - Negation detection: "Actually, scratch that — let's go with plan B"
+    negates everything in the preceding proposal
+  - Attachment awareness: "see attached SOW" or "per the deck I sent
+    Tuesday" — flag that a requirement lives outside the email body
+  - Cross-thread references: "as discussed in the other thread about
+    the Brazil report" — flag that context exists elsewhere
+  - Output must be structured, scannable, and cite specific messages
+    by sender + timestamp so the analyst can verify
+
+  Building...
+
+  email-thread-intel-skill/
+  ├── SKILL.md
+  ├── scripts/
+  │   ├── thread_parser.py          # Parse .eml/.msg/raw text into
+  │   │                             #   structured message objects
+  │   │                             #   (sender, date, body, quoted text)
+  │   ├── thread_reconstructor.py   # Rebuild conversation tree from
+  │   │                             #   In-Reply-To, References, quoting
+  │   │                             #   patterns, and timestamp ordering
+  │   ├── participant_resolver.py   # Entity resolution: merge "John",
+  │   │                             #   "JS", "john.smith@acme.com" into
+  │   │                             #   one person with role/seniority
+  │   ├── intent_tracker.py         # Track requirements through the
+  │   │                             #   thread: initial ask → modifications
+  │   │                             #   → supersessions → final state
+  │   ├── decision_extractor.py     # Find explicit decisions, implicit
+  │   │                             #   agreements, and authority signals
+  │   ├── action_item_finder.py     # "Can you send me..." / "I'll have
+  │   │                             #   this by Friday" / "ACTION: ..."
+  │   │                             #   with owner + deadline extraction
+  │   ├── conflict_detector.py      # Find incompatible statements from
+  │   │                             #   different participants that were
+  │   │                             #   never explicitly resolved
+  │   ├── question_tracker.py       # Questions asked but never answered
+  │   │                             #   in subsequent messages
+  │   ├── scope_diff.py             # Compare initial request vs final
+  │   │                             #   agreed state: added/removed/changed
+  │   └── report_builder.py         # Thread Intelligence Brief (markdown
+  │                                 #   + optional PDF)
+  ├── references/
+  │   ├── parsing-patterns.md       # Email quoting styles, signature
+  │   │                             #   patterns, forwarding formats
+  │   ├── intent-signals.md         # Linguistic markers for decisions,
+  │   │                             #   proposals, agreements, rejections
+  │   ├── authority-heuristics.md   # How to infer seniority from email
+  │   │                             #   metadata and language patterns
+  │   └── methodology.md
+  ├── assets/
+  │   ├── decision_phrases.json     # "let's go with", "approved", "agreed"
+  │   ├── action_phrases.json       # "can you", "please send", "I'll do"
+  │   ├── negation_phrases.json     # "actually", "scratch that", "instead"
+  │   ├── hedge_phrases.json        # "maybe", "what if", "just thinking"
+  │   │                             #   (proposals, not decisions)
+  │   └── title_seniority.json      # "MD" > "Director" > "VP" > "Associate"
+  │                                 #   (for authority weighting)
+  ├── install.sh
+  └── README.md
+
+  Validation: PASSED
+  Security: PASSED (no external APIs — all processing is local)
+  Installed at: ~/.claude/skills/email-thread-intel-skill
+
+  Shared to: github.com/acme-trading/email-thread-intel-skill
+
+
+--- The analyst pastes a nightmarish client thread ---
+
+Analyst: /email-thread-intel-skill Parse this thread and tell me what the client actually wants. I've been CC'd into the middle of it and I'm lost: emails/client-brazil-soy-report-thread.eml
+
+Copilot (loading email-thread-intel-skill):
+
+  Parsing emails/client-brazil-soy-report-thread.eml...
+  47 messages, 9 participants, spanning Feb 10 – Mar 3, 2026.
+  Reconstructing conversation tree...
+  Resolving participants...
+  Extracting requirements, decisions, and action items...
+
+  THREAD INTELLIGENCE BRIEF
+  Subject: "RE: RE: FW: Brazil Soy Report — Scope & Deliverables"
+
+  ════════════════════════════════════════════════════════
+  PARTICIPANTS (resolved)
+  ════════════════════════════════════════════════════════
+
+  | Name               | Role                  | Org        | Messages | Authority |
+  |--------------------|-----------------------|------------|----------|-----------|
+  | Sarah Chen         | Portfolio Manager     | Client     | 8        | HIGH      |
+  | David Park         | Head of Research      | Client     | 3        | HIGHEST   |
+  | Lisa Nakamura      | Research Analyst      | Client     | 12       | MEDIUM    |
+  | Tom Bradley        | Trading Desk          | Client     | 6        | MEDIUM    |
+  | You (Maria Santos) | Senior Analyst        | Our Firm   | 7        | —         |
+  | James Wilson       | Head of Ag Research   | Our Firm   | 4        | HIGH      |
+  | Alex Rivera        | Junior Analyst        | Our Firm   | 5        | LOW       |
+  | Priya Sharma       | Sales Coverage        | Our Firm   | 1        | LOW       |
+  | Rachel Kim         | Compliance            | Our Firm   | 1        | N/A       |
+
+  Note: "Lisa N.", "L. Nakamura", and "lisa.nakamura@clientfund.com"
+  are the same person (12 messages total, not 3 people with 4 each).
+
+  ════════════════════════════════════════════════════════
+  REQUIREMENTS EVOLUTION (what changed over time)
+  ════════════════════════════════════════════════════════
+
+  ORIGINAL REQUEST (Feb 10, Sarah Chen):
+  "We need a deep-dive report on Brazil soybean production risk for
+   the 2025/26 season. 15-20 pages. Focus on weather impact and
+   export pace. Deadline: end of February."
+
+  MODIFICATION #1 (Feb 14, Lisa Nakamura):
+  "Can you also include Argentina? The drought situation there is
+   getting interesting. Maybe a comparative section."
+  Status: ACCEPTED by Sarah Chen (Feb 14): "Good idea Lisa, yes
+  please include Argentina."
+  → SCOPE EXPANDED: Argentina added as comparative section
+
+  MODIFICATION #2 (Feb 18, Tom Bradley, Trading Desk):
+  "For the trading desk, we also need short-term price scenarios.
+   Like what happens to the May-July spread if USDA cuts Argentina
+   by 5 MMT in March. Give us 3 scenarios with price targets."
+  Status: PARTIALLY ACCEPTED by Sarah Chen (Feb 19): "The scenarios
+  are useful but let's keep it to 2 scenarios — bull and bear case.
+  Three is too many for the investment committee."
+  → SCOPE EXPANDED: Price scenarios added, but 2 not 3
+
+  MODIFICATION #3 (Feb 24, David Park, Head of Research):
+  "I want this to also serve as input for our quarterly allocation
+   meeting on March 15. Add a one-page executive summary that a
+   generalist portfolio manager can read in 2 minutes. And push
+   the deadline to March 10 — we need it 5 days before the meeting."
+  Status: THIS IS THE FINAL AUTHORITY. David Park is the most senior
+  client participant. No one contradicted this.
+  → DEADLINE CHANGED: Feb 28 → March 10
+  → SCOPE EXPANDED: Executive summary added (1 page, generalist audience)
+  → PURPOSE EXPANDED: Now serves quarterly allocation meeting
+
+  MODIFICATION #4 (Feb 26, Lisa Nakamura):
+  "One more thing — can you include a section on Chinese demand? I
+   know it's not in the original scope but it's really driving the
+   price action."
+  Status: ⚠️ NEVER EXPLICITLY APPROVED OR REJECTED. Sarah Chen
+  did not respond to this message. Lisa does not have authority to
+  expand scope unilaterally. James Wilson (our side) replied "we can
+  look into it" — but that's our internal response, not client
+  approval.
+  → AMBIGUOUS: China demand section — in scope or not?
+
+  ════════════════════════════════════════════════════════
+  FINAL AGREED REQUIREMENTS (as of last message, Mar 3)
+  ════════════════════════════════════════════════════════
+
+  ✓ CONFIRMED:
+  1. Deep-dive on Brazil soybean production risk (2025/26)
+     — Weather impact, crop conditions, production estimates
+     — Source: Sarah Chen, Feb 10 (original request)
+  2. Argentina comparative section (drought analysis)
+     — Source: Lisa Nakamura, Feb 14 → approved by Sarah Chen
+  3. Two price scenarios: bull case and bear case
+     — Include May-July spread implications
+     — Source: Tom Bradley, Feb 18 → modified by Sarah Chen to 2 scenarios
+  4. One-page executive summary for generalist audience
+     — Source: David Park, Feb 24 (highest authority)
+  5. Export pace analysis (Brazil)
+     — Source: Sarah Chen, Feb 10 (original request)
+  6. Length: 15-20 pages (excluding exec summary)
+     — Source: Sarah Chen, Feb 10 (never modified)
+  7. Deadline: March 10, 2026
+     — Source: David Park, Feb 24 (overrode original Feb 28)
+
+  ⚠️ UNRESOLVED:
+  8. China demand section — requested by Lisa (Feb 26), never approved
+     by Sarah or David. Recommend: email Sarah directly to confirm
+     before spending time on this.
+
+  ✗ SUPERSEDED (no longer valid):
+  9. "3 price scenarios" — Tom Bradley's request was narrowed to 2 by
+     Sarah Chen. Do NOT deliver 3 scenarios.
+  10. "End of February deadline" — overridden by David Park to March 10.
+
+  ════════════════════════════════════════════════════════
+  ACTION ITEMS
+  ════════════════════════════════════════════════════════
+
+  | # | Action                              | Owner           | Deadline  | Status    |
+  |---|-------------------------------------|-----------------|-----------|-----------|
+  | 1 | Deliver Brazil/Argentina soy report | Maria Santos    | Mar 10    | IN PROGRESS|
+  | 2 | Send interim data tables to Lisa    | Alex Rivera     | Feb 28    | ⚠️ OVERDUE |
+  | 3 | Confirm China section in/out        | Maria Santos    | ASAP      | OPEN      |
+  | 4 | Share draft for internal review     | Maria Santos    | Mar 5     | OPEN      |
+  | 5 | Compliance review of draft          | Rachel Kim      | Mar 7     | PENDING   |
+  | 6 | Schedule client call for Mar 12     | Priya Sharma    | Mar 3     | ⚠️ OVERDUE |
+
+  NOTE: Action item #2 is OVERDUE. Alex Rivera agreed on Feb 20 to
+  "send the PSD tables by end of the month." It's now March 3. Lisa
+  asked about it on Feb 28 and got no response. This needs follow-up
+  immediately — the client noticed.
+
+  ════════════════════════════════════════════════════════
+  UNANSWERED QUESTIONS
+  ════════════════════════════════════════════════════════
+
+  1. Lisa Nakamura (Feb 22): "Should the price scenarios use the
+     March WASDE numbers or our own estimates?"
+     → Nobody responded. This affects the entire scenarios section.
+     Recommend: ask Sarah or decide internally and state assumption.
+
+  2. Tom Bradley (Feb 25): "Can you include the May-July spread chart
+     going back 10 years? I want to show the trading committee."
+     → Nobody responded. Simple request, probably should just do it.
+
+  3. Sarah Chen (Feb 27): "What format are you thinking — Word doc
+     or PDF? Last time the formatting was off in PDF."
+     → James Wilson replied "we'll send both" (Mar 1). But did Maria
+     confirm? The thread ended without Maria acknowledging.
+
+  ════════════════════════════════════════════════════════
+  CONFLICTS (incompatible statements, never resolved)
+  ════════════════════════════════════════════════════════
+
+  CONFLICT #1: Report audience
+  - Sarah Chen (Feb 10): "This is for our ag research team" (specialist
+    audience, technical depth expected)
+  - David Park (Feb 24): "Add a one-page exec summary for a generalist
+    portfolio manager" (implies the REPORT will be read by generalists)
+
+  These aren't necessarily incompatible — the report can be technical
+  with a generalist exec summary. But clarify: is the generalist going
+  to read ONLY the exec summary, or the whole report? If the whole
+  report, the writing style needs to shift.
+
+  CONFLICT #2: Argentina depth
+  - Lisa Nakamura (Feb 14): "Maybe a comparative section" (brief)
+  - Tom Bradley (Feb 20): "The Argentina drought is the real story —
+    give it equal weight to Brazil" (deep)
+
+  Sarah Chen approved "include Argentina" but didn't specify depth.
+  These two colleagues are asking for different things. Recommend:
+  3-5 pages on Argentina (not a full separate analysis, but more than
+  a sidebar).
+
+  ════════════════════════════════════════════════════════
+  SCOPE DIFF (original → final)
+  ════════════════════════════════════════════════════════
+
+  ORIGINAL (Feb 10)         →    FINAL (as of Mar 3)
+  ──────────────────────────────────────────────────────
+  Brazil only               →    Brazil + Argentina comparative
+  No price scenarios        →    2 price scenarios (bull/bear)
+  No exec summary           →    1-page exec summary (generalist)
+  15-20 pages               →    15-20 pages + exec summary
+  Due: end of February      →    Due: March 10
+  Audience: ag research     →    Audience: ag research + PM (exec summary)
+  No spread analysis        →    May-July spread implications
+  No China coverage         →    China: ⚠️ UNRESOLVED
+
+  The scope has approximately DOUBLED since the original request.
+  The deadline moved back by 10 days, but the scope grew faster than
+  the timeline. Flag this to James Wilson — this may need a revised
+  LOE estimate.
+
+  ════════════════════════════════════════════════════════
+  RECOMMENDED NEXT STEPS
+  ════════════════════════════════════════════════════════
+
+  1. URGENT: Follow up on Alex's overdue data tables to Lisa (Feb 28)
+  2. Email Sarah Chen directly: "Should we include a China demand
+     section? Lisa suggested it — want to confirm before we invest
+     the time." (5 seconds of her time, saves you 4 hours of work)
+  3. Ask Sarah or Lisa: "For the price scenarios, should we use USDA's
+     official estimates or our internal model?" (unanswered question #1)
+  4. Just include the 10-year May-July spread chart — it's easy, Tom
+     asked for it, and nobody objected
+  5. Send both Word and PDF per James's commitment
+  6. Flag to James Wilson that scope has doubled — is the March 10
+     deadline still realistic with current resources?
+
+
+--- Quick follow-up on a different thread ---
+
+Analyst: /email-thread-intel-skill Quick scan — just the action items and deadlines from this internal thread: emails/weekly-publication-schedule.eml
+
+Copilot (loading email-thread-intel-skill):
+
+  Parsing emails/weekly-publication-schedule.eml...
+  23 messages, 5 participants (all internal), spanning Feb 28 – Mar 4.
+  Quick scan mode (action items + deadlines only)...
+
+  ACTION ITEMS — Weekly Publication Schedule Thread
+
+  | # | Action                                | Owner          | Deadline      | Source Message       |
+  |---|---------------------------------------|----------------|---------------|----------------------|
+  | 1 | Soybeans Weekly draft                 | Maria Santos   | Mon Mar 4 9am | James W., Feb 28    |
+  | 2 | Wheat Weekly draft                    | Alex Rivera    | Mon Mar 4 9am | James W., Feb 28    |
+  | 3 | Coffee Flash (if ICE moves > 3%)      | Maria Santos   | Same day      | James W., Feb 28    |
+  | 4 | Update S&D model with March WASDE     | Alex Rivera    | Tue Mar 5     | Maria S., Mar 3     |
+  | 5 | Client call prep deck (Chen account)  | Maria Santos   | Wed Mar 5     | Priya S., Mar 1     |
+  | 6 | Review all drafts before compliance   | James Wilson   | Mon Mar 4 2pm | James W., Feb 28    |
+
+  SCHEDULING CONFLICT DETECTED:
+  Maria Santos has 3 deliverables due Monday morning (items 1, 3, 6)
+  plus the Chen report (from the other thread) in progress. James
+  Wilson committed to review "all drafts by 2pm Monday" — but Maria's
+  soybeans draft is due at 9am and James typically doesn't review
+  until after lunch. Recommend: send James the draft Friday evening
+  for early Monday review.
+
+  OVERDUE: None — all deadlines are upcoming.
+  UNANSWERED: Alex Rivera hasn't acknowledged item #4 (WASDE update).
+
+
+--- The universal use case: "what did we decide on the call?" ---
+
+Analyst: /email-thread-intel-skill Someone took rough notes during a client call and emailed them out. Parse these notes and give me the real decisions and follow-ups. There were "action items" listed but I don't think they're complete: emails/call-notes-chen-account-mar3.eml
+
+Copilot (loading email-thread-intel-skill):
+
+  Parsing emails/call-notes-chen-account-mar3.eml...
+  1 message (call notes email) + 6 reply messages (corrections/additions).
+  Processing notes + corrections...
+
+  CALL INTELLIGENCE — Chen Account, March 3, 2026
+
+  STATED IN ORIGINAL NOTES (sent by Priya Sharma):
+  - "Client wants the report by March 10" ✓ Consistent with thread
+  - "Discussed including China demand section" — VAGUE
+  - "Tom wants spread analysis" ✓ Consistent with thread
+  - Action items listed: "Maria to send draft by Mar 7"
+
+  CORRECTIONS FROM REPLY CHAIN:
+  - James Wilson (Mar 3, 4:12pm): "Actually, Sarah said March 10 for
+    FINAL, not draft. Draft review should be internal by March 7.
+    Priya's notes have this backwards."
+  - Lisa Nakamura (Mar 3, 5:30pm): "To clarify — I asked about China
+    and Sarah said 'if there's time, sure, but don't delay the report
+    for it.' So it's optional, not required."
+
+  THIS IS CRITICAL. The reply chain CONTRADICTS the original notes:
+
+  | Item               | Original Notes Say    | Replies Corrected To        |
+  |--------------------|-----------------------|-----------------------------|
+  | March 10 deadline  | Report due Mar 10     | FINAL due Mar 10, draft Mar 7|
+  | China section      | "Discussed"           | Optional — don't delay for it|
+  | Draft to client    | "Maria to send by Mar 7" | Mar 7 is INTERNAL review  |
+
+  If you followed the original notes, you'd send the client a draft on
+  March 7 (wrong — that's the internal review date) and you'd spend
+  4 hours on the China section (unnecessary — Sarah said optional).
+
+  REAL ACTION ITEMS (merged from notes + corrections):
+
+  | # | Action                           | Owner         | Deadline | Confidence |
+  |---|----------------------------------|---------------|----------|------------|
+  | 1 | Internal draft ready             | Maria Santos  | Mar 7    | HIGH       |
+  | 2 | James reviews draft              | James Wilson  | Mar 7-8  | HIGH       |
+  | 3 | Compliance review                | Rachel Kim    | Mar 8-9  | MEDIUM     |
+  | 4 | Final report to client           | Maria Santos  | Mar 10   | HIGH       |
+  | 5 | China section (OPTIONAL)         | Maria Santos  | only if time | MEDIUM |
+  | 6 | Include 10yr spread chart        | Alex Rivera   | with draft| HIGH      |
+
+  The notes Priya sent are 60% accurate. The reply corrections are
+  essential. If you'd only read Priya's email, you'd have the wrong
+  deadline structure and waste time on an optional section.
+
+
+=============================================================
+WHY THIS SKILL WORKS
+=============================================================
+
+This skill is universal. It's not specific to commodity research,
+finance, or any industry. Every knowledge worker in every company
+deals with:
+
+  - Email threads that mutate requirements over 20+ messages
+  - Meeting notes that don't match what was actually discussed
+  - Scope creep buried in casual replies ("oh and can you also...")
+  - Action items with no clear owner or deadline
+  - Questions that get asked but fall through the cracks
+  - Authority ambiguity — who actually has the power to decide?
+
+The skill doesn't need APIs, credentials, or external data. It runs
+entirely on the text you give it. The intelligence is in the parsing:
+
+  - TEMPORAL TRACKING: message #5 says X, message #28 overrides X
+    with Y. The skill knows Y is current, not X.
+  - AUTHORITY WEIGHTING: the Head of Research saying "do this"
+    outweighs a junior analyst suggesting "maybe that."
+  - SILENCE DETECTION: a question asked in message #15 that nobody
+    answered in the next 32 messages is a dropped ball.
+  - IMPLICIT AGREEMENT: "sounds good" = soft yes. "I've approved
+    this" = hard yes. Both are agreements but at different confidence.
+  - NEGATION AWARENESS: "Actually, scratch that" makes everything
+    before it in that reply irrelevant.
+
+The ROI is immediate and measurable:
+
+  WITHOUT THE SKILL:
+  - Re-read 47-message thread: 30-45 minutes
+  - Still miss 2-3 buried decisions or scope changes
+  - Start working on superseded requirements (wasted hours)
+  - Miss an overdue action item (damages client relationship)
+  - Misinterpret call notes (wrong deliverable timeline)
+
+  WITH THE SKILL:
+  - Paste thread, get intelligence brief: 30 seconds
+  - Full visibility into requirements evolution
+  - Clear action items with owners and deadlines
+  - Conflicts and unanswered questions surfaced explicitly
+  - Zero time re-reading — jump straight to acting
+
+  The skill pays for itself the first time it catches a scope change
+  you would have missed, or surfaces an overdue action item that was
+  about to become a client complaint.
