@@ -5,9 +5,11 @@ Simulated Interaction: VS Code Copilot + agent-skill-creator
 
 Setup (one time, already done)
 
-  git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.claude/skills/agent-skill-creator
+  git clone https://github.com/FrancyJGLisboa/agent-skill-creator.git ~/.agents/skills/agent-skill-creator
 
-VS Code Copilot finds it at ~/.claude/skills/ automatically.
+VS Code Copilot, Claude Code, Gemini CLI, and other tools find it at
+~/.agents/skills/ automatically (symlinked to tool-specific paths by
+the installer).
 
 ---
 
@@ -56,7 +58,7 @@ Copilot (loading agent-skill-creator skill):
   - Spec compliance: PASSED (frontmatter, naming, structure, references)
   - Security scan: PASSED (no hardcoded API keys, credentials use environment variables)
 
-  Installed at: ~/.claude/skills/customer-churn-skill
+  Installed at: ~/.agents/skills/customer-churn-skill
 
   To use it, start a new chat and type:
     /customer-churn-skill Generate the monthly churn report for March
@@ -83,7 +85,7 @@ Copilot:
   Done! Share this with your team:
 
   # For VS Code Copilot / Claude Code:
-  git clone https://github.com/your-org/customer-churn-skill.git ~/.claude/skills/customer-churn-skill
+  git clone https://github.com/your-org/customer-churn-skill.git ~/.agents/skills/customer-churn-skill
 
   # For Codex CLI / Gemini CLI / Kiro:
   git clone https://github.com/your-org/customer-churn-skill.git ~/.agents/skills/customer-churn-skill
@@ -187,7 +189,7 @@ Copilot (loading agent-skill-creator skill):
   └── README.md
 
   Validation: PASSED | Security: PASSED
-  Installed at: ~/.claude/skills/wasde-analyzer-skill
+  Installed at: ~/.agents/skills/wasde-analyzer-skill
 
   To use it:
     /wasde-analyzer-skill Analyze the March 2026 WASDE, consensus file at data/bloomberg-consensus-mar26.csv
@@ -201,7 +203,7 @@ Copilot:
   gh repo create acme-trading/wasde-analyzer-skill --private --source=. --push
 
   Share with your team:
-    git clone https://github.com/acme-trading/wasde-analyzer-skill.git ~/.claude/skills/wasde-analyzer-skill
+    git clone https://github.com/acme-trading/wasde-analyzer-skill.git ~/.agents/skills/wasde-analyzer-skill
 
 
 --- On WASDE release day, a junior analyst uses it ---
@@ -305,7 +307,7 @@ Copilot (loading agent-skill-creator skill):
   └── README.md
 
   Validation: PASSED | Security: PASSED
-  Installed at: ~/.claude/skills/crop-weather-weekly-skill
+  Installed at: ~/.agents/skills/crop-weather-weekly-skill
 
   Share with your team?
 
@@ -316,7 +318,7 @@ Copilot:
   gh repo create acme-trading/crop-weather-weekly-skill --private --source=. --push
 
   Done! Your team:
-    git clone https://github.com/acme-trading/crop-weather-weekly-skill.git ~/.claude/skills/crop-weather-weekly-skill
+    git clone https://github.com/acme-trading/crop-weather-weekly-skill.git ~/.agents/skills/crop-weather-weekly-skill
 
 
 --- Monday morning during growing season ---
@@ -436,7 +438,7 @@ Copilot (loading agent-skill-creator skill):
   └── README.md
 
   Validation: PASSED | Security: PASSED
-  Installed at: ~/.claude/skills/basis-export-tracker-skill
+  Installed at: ~/.agents/skills/basis-export-tracker-skill
 
   Shared to: github.com/acme-trading/basis-export-tracker-skill
 
@@ -572,7 +574,7 @@ Copilot (loading agent-skill-creator skill):
   └── README.md
 
   Validation: PASSED | Security: PASSED
-  Installed at: ~/.claude/skills/coffee-fundamental-skill
+  Installed at: ~/.agents/skills/coffee-fundamental-skill
 
   Shared to: github.com/acme-trading/coffee-fundamental-skill
 
@@ -772,7 +774,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (PSD_API_KEY read from env, not hardcoded)
-  Installed at: ~/.claude/skills/psd-balance-sheet-skill
+  Installed at: ~/.agents/skills/psd-balance-sheet-skill
 
 
 --- Monthly use right after WASDE release ---
@@ -934,7 +936,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (GTT_USER_ID and GTT_PASSWORD read from env, not hardcoded)
-  Installed at: ~/.claude/skills/trade-flow-intel-skill
+  Installed at: ~/.agents/skills/trade-flow-intel-skill
 
   Shared to: github.com/acme-trading/trade-flow-intel-skill
 
@@ -1125,7 +1127,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (all 3 credentials read from env)
-  Installed at: ~/.claude/skills/supply-chain-risk-skill
+  Installed at: ~/.agents/skills/supply-chain-risk-skill
 
   Shared to: github.com/acme-trading/supply-chain-risk-skill
 
@@ -1375,7 +1377,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (OPEN_METEO_API_KEY read from env)
-  Installed at: ~/.claude/skills/yield-predictor-skill
+  Installed at: ~/.agents/skills/yield-predictor-skill
 
   Shared to: github.com/acme-trading/yield-predictor-skill
 
@@ -1534,7 +1536,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (OPEN_METEO_API_KEY read from env)
-  Installed at: ~/.claude/skills/parana-river-risk-skill
+  Installed at: ~/.agents/skills/parana-river-risk-skill
 
   Shared to: github.com/acme-trading/parana-river-risk-skill
 
@@ -1712,7 +1714,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (OPEN_METEO_API_KEY read from env)
-  Installed at: ~/.claude/skills/crop-anomaly-scanner-skill
+  Installed at: ~/.agents/skills/crop-anomaly-scanner-skill
 
   Shared to: github.com/acme-trading/crop-anomaly-scanner-skill
 
@@ -1923,7 +1925,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED
-  Installed at: ~/.claude/skills/planting-window-skill
+  Installed at: ~/.agents/skills/planting-window-skill
 
   Shared to: github.com/acme-trading/planting-window-skill
 
@@ -2121,7 +2123,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (no credentials needed — public data)
-  Installed at: ~/.claude/skills/noaa-crop-monitor-skill
+  Installed at: ~/.agents/skills/noaa-crop-monitor-skill
 
   Shared to: github.com/acme-trading/noaa-crop-monitor-skill
 
@@ -2355,7 +2357,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (NASA_FIRMS_KEY read from env)
-  Installed at: ~/.claude/skills/fire-crop-monitor-skill
+  Installed at: ~/.agents/skills/fire-crop-monitor-skill
 
   Shared to: github.com/acme-trading/fire-crop-monitor-skill
 
@@ -2506,7 +2508,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (AIS_API_KEY read from env)
-  Installed at: ~/.claude/skills/vessel-grain-tracker-skill
+  Installed at: ~/.agents/skills/vessel-grain-tracker-skill
 
   Shared to: github.com/acme-trading/vessel-grain-tracker-skill
 
@@ -2652,7 +2654,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (COPERNICUS_CLIENT_ID/SECRET read from env)
-  Installed at: ~/.claude/skills/sentinel-field-ndvi-skill
+  Installed at: ~/.agents/skills/sentinel-field-ndvi-skill
 
   Shared to: github.com/acme-trading/sentinel-field-ndvi-skill
 
@@ -2940,7 +2942,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (no external credentials needed — all rules are local)
-  Installed at: ~/.claude/skills/publication-compliance-skill
+  Installed at: ~/.agents/skills/publication-compliance-skill
 
   Shared to: github.com/acme-trading/publication-compliance-skill
 
@@ -3468,7 +3470,7 @@ Copilot (loading agent-skill-creator skill):
 
   Validation: PASSED
   Security: PASSED (no external APIs — all processing is local)
-  Installed at: ~/.claude/skills/email-thread-intel-skill
+  Installed at: ~/.agents/skills/email-thread-intel-skill
 
   Shared to: github.com/acme-trading/email-thread-intel-skill
 
