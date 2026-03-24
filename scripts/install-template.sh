@@ -186,13 +186,13 @@ validate_skill_md() {
 # ---------------------------------------------------------------------------
 # Platform detection
 # ---------------------------------------------------------------------------
-SUPPORTED_PLATFORMS="claude-code, copilot, cursor, windsurf, cline, codex, gemini, kiro, trae, goose, opencode, roo-code, antigravity, universal"
+SUPPORTED_PLATFORMS="claude-code, openclaw, copilot, cursor, windsurf, cline, codex, gemini, kiro, trae, goose, opencode, roo-code, antigravity, universal"
 
 detect_platform() {
     # If explicitly provided, validate and return it.
     if [ -n "$PLATFORM" ]; then
         case "$PLATFORM" in
-            claude-code|copilot|cursor|windsurf|cline|codex|gemini|\
+            claude-code|openclaw|copilot|cursor|windsurf|cline|codex|gemini|\
             kiro|trae|goose|opencode|roo-code|antigravity|universal)
                 info "Platform explicitly set to: ${PLATFORM}"
                 return 0
@@ -618,6 +618,14 @@ print_activation_instructions() {
             printf "  2. The skill will be loaded automatically from:\n"
             printf "     ${BOLD}${INSTALL_DIR}/SKILL.md${NC}\n"
             printf "  3. Use trigger phrases defined in the skill's description.\n"
+            ;;
+        openclaw)
+            printf "To activate the skill in OpenClaw:\n"
+            printf "  1. Start a new OpenClaw session.\n"
+            printf "  2. The skill will be loaded automatically from:\n"
+            printf "     ${BOLD}${INSTALL_DIR}/SKILL.md${NC}\n"
+            printf "  3. OpenClaw reads from ~/.openclaw/workspace/skills/ automatically.\n"
+            printf "  4. Use trigger phrases or invoke with /skill-name\n"
             ;;
         copilot)
             printf "To activate the skill in GitHub Copilot:\n"

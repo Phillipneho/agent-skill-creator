@@ -15,7 +15,7 @@ metadata:
   version: 4.0.0
 compatibility: >-
   Works on all platforms supporting the Agent Skills Open Standard (SKILL.md):
-  Claude Code, GitHub Copilot CLI, VS Code Copilot, Cursor, Windsurf, Cline,
+  Claude Code, OpenClaw, GitHub Copilot CLI, VS Code Copilot, Cursor, Windsurf, Cline,
   OpenAI Codex CLI, Gemini CLI, and 20+ others.
 ---
 # /agent-skill-creator — Level 5 Skill Dark Factory

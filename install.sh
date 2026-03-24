@@ -71,6 +71,7 @@ all_platform_entries() {
     # Format: <detection_dir>|<install_path>|<display_name>
     cat <<'PLATFORMS'
 $HOME/.claude|$HOME/.claude/skills/$SKILL_NAME|Claude Code
+$HOME/.openclaw|$HOME/.openclaw/workspace/skills/$SKILL_NAME|OpenClaw
 $HOME/.gemini|$HOME/.gemini/skills/$SKILL_NAME|Gemini CLI
 $HOME/.config/goose|$HOME/.config/goose/skills/$SKILL_NAME|Goose
 $HOME/.config/opencode|$HOME/.config/opencode/skills/$SKILL_NAME|OpenCode

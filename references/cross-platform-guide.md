@@ -147,6 +147,21 @@ cp -r skill-name/ .claude/skills/skill-name/
 
 **Best for:** Developers, power users, teams with git workflows.
 
+### OpenClaw
+
+```bash
+# Using install.sh
+./install.sh --platform openclaw
+
+# Manual: User-level
+cp -r skill-name/ ~/.openclaw/workspace/skills/skill-name/
+
+# Manual: Project-level
+cp -r skill-name/ .openclaw/workspace/skills/skill-name/
+```
+
+**Best for:** OpenClaw users, AI agent orchestration, multi-agent workflows. OpenClaw reads SKILL.md natively with full support for the Agent Skills Open Standard, including `user-invocable` and `metadata.openclaw` frontmatter fields.
+
 ### GitHub Copilot
 
 ```bash
